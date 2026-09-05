@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /config/
+Disallow: /includes/
+Disallow: /payment/
+Disallow: /cart.php
+Disallow: /checkout.php
+Disallow: /account.php
+Disallow: /orders.php
+
+Sitemap: https://yoursspecially.com/sitemap.xml
