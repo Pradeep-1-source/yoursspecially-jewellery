@@ -104,13 +104,31 @@ require_once __DIR__ . '/includes/header.php';
 </script>
 
 <div class="container" style="padding-top: 2rem; padding-bottom: 5rem;">
-    <!-- Breadcrumb -->
-    <nav style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 2rem;">
-        <a href="<?= BASE_URL ?>index.php" style="color: inherit;">Home</a> &rarr; 
-        <a href="<?= BASE_URL ?>products.php" style="color: inherit;">Shop</a> &rarr; 
-        <a href="<?= BASE_URL ?>products.php?category=<?= urlencode($product['category_slug']) ?>" style="color: inherit;"><?= e($product['category_name']) ?></a> &rarr; 
-        <span style="color: var(--primary); font-weight: 500;"><?= e($product['name']) ?></span>
-    </nav>
+    <!-- Breadcrumb & Back Navigation -->
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+        <nav style="font-size: 0.85rem; color: var(--text-muted);">
+            <a href="<?= BASE_URL ?>index.php" style="color: inherit;">Home</a> &rarr; 
+            <a href="<?= BASE_URL ?>products.php" style="color: inherit;">Shop</a> &rarr; 
+            <a href="<?= BASE_URL ?>products.php?category=<?= urlencode($product['category_slug']) ?>" style="color: inherit;"><?= e($product['category_name']) ?></a> &rarr; 
+            <span style="color: var(--primary); font-weight: 500;"><?= e($product['name']) ?></span>
+        </nav>
+        <a href="javascript:void(0)" onclick="goBackToCollection()" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 0.4rem 1rem;">
+            &larr; Back to Collection
+        </a>
+    </div>
+
+    <script>
+    function goBackToCollection() {
+        const lastUrl = sessionStorage.getItem('ysj_last_listing_url');
+        if (lastUrl && (lastUrl.includes('products.php') || lastUrl.includes('index.php'))) {
+            window.location.href = lastUrl;
+        } else if (document.referrer && (document.referrer.includes('products.php') || document.referrer.includes('index.php'))) {
+            window.location.href = document.referrer;
+        } else {
+            window.location.href = '<?= BASE_URL ?>products.php';
+        }
+    }
+    </script>
 
     <!-- Main Product Grid -->
     <div class="product-detail-layout">
@@ -148,17 +166,12 @@ require_once __DIR__ . '/includes/header.php';
                 <?php endif; ?>
             </div>
 
-            <!-- Stock Availability -->
-            <div class="stock-status">
-                <?php if ($inStock): ?>
-                    <span class="stock-in">&#9679; In Stock</span>
-                    <?php if ($product['stock'] <= 5): ?>
-                        <span class="stock-low" style="font-size: 0.8rem;">(Only <?= $product['stock'] ?> pieces left in our boutique!)</span>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <span class="stock-out">&#9679; Currently Sold Out</span>
-                <?php endif; ?>
+            <?php if (!$inStock): ?>
+            <!-- Stock Availability (Only for Sold Out) -->
+            <div class="stock-status" style="margin-bottom: 1.25rem;">
+                <span class="stock-out">&#9679; Currently Sold Out</span>
             </div>
+            <?php endif; ?>
 
             <!-- Description -->
             <div style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 2rem;">
@@ -167,36 +180,43 @@ require_once __DIR__ . '/includes/header.php';
 
             <!-- Purchase Controls -->
             <?php if ($inStock): ?>
-                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <div style="display: flex; gap: 0.85rem; align-items: center; margin-bottom: 2rem; flex-wrap: wrap;">
                     <div class="qty-control">
                         <button type="button" class="qty-btn" onclick="updateQty(-1)">-</button>
                         <input type="number" id="productQuantity" value="1" min="1" max="<?= (int)$product['stock'] ?>" class="qty-input" readonly>
                         <button type="button" class="qty-btn" onclick="updateQty(1)">+</button>
                     </div>
 
-                    <button type="button" class="btn btn-primary ajax-add-to-cart" data-product-id="<?= $product['id'] ?>" style="flex-grow: 1;">
+                    <button type="button" class="btn btn-primary ajax-add-to-cart" data-product-id="<?= $product['id'] ?>" style="flex: 1; min-width: 170px;">
                         Add to Shopping Bag
                     </button>
 
-                    <button type="button" class="btn btn-secondary" onclick="buyNow(<?= $product['id'] ?>)">
+                    <button type="button" class="btn btn-secondary" onclick="buyNow(<?= $product['id'] ?>)" style="min-width: 120px;">
                         Buy Now
+                    </button>
+
+                    <!-- Wishlist Toggle -->
+                    <button type="button" class="wishlist-toggle-btn" 
+                            data-product-id="<?= $product['id'] ?>"
+                            data-name="<?= e($product['name']) ?>"
+                            data-slug="<?= e($product['slug']) ?>"
+                            data-price="<?= e($product['price']) ?>"
+                            data-sale-price="<?= e($product['sale_price'] ?? '') ?>"
+                            data-image="<?= e($galleryImages[0] ?? 'assets/images/prod-neck-1.jpg') ?>"
+                            data-sku="<?= e($product['sku']) ?>"
+                            data-in-stock="<?= $inStock ? '1' : '0' ?>"
+                            style="width: 44px; height: 44px; flex-shrink: 0; box-shadow: var(--shadow-soft); border: 1px solid var(--border-subtle);"
+                            title="Save to Wishlist" aria-label="Save to Wishlist">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
                     </button>
                 </div>
             <?php else: ?>
-                <div style="background: #FFF1F2; border: 1px solid #FECDD3; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; color: #9F1239; font-size: 0.9rem;">
-                    This handcrafted design is currently out of stock. Please click below to request a personalized restock notice or custom creation.
+                <div style="background: #FFF1F2; border: 1px solid #FECDD3; padding: 1rem; border-radius: 6px; margin-bottom: 2rem; color: #9F1239; font-size: 0.9rem;">
+                    This handcrafted design is currently out of stock. Please check back soon or explore our other collections.
                 </div>
             <?php endif; ?>
-
-            <!-- WhatsApp Direct Enquiry -->
-            <div style="margin-bottom: 2.5rem;">
-                <a href="<?= $waUrl ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-block" style="display: flex; align-items: center; justify-content: center; gap: 8px; border-color: #25D366; color: #128C7E;">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                        <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.23 8.23 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.42 0-2.82-.37-4.06-1.07l-.29-.17-3.12.82.83-3.04-.19-.3a8.19 8.19 0 0 1-1.26-4.48c0-4.54 3.7-8.24 8.24-8.24m4.52 11.59c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.67-1.25-1.49-1.4-1.74-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1s.9 2.44 1.03 2.61c.13.17 1.77 2.7 4.28 3.79.6.26 1.07.41 1.43.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.22-.17-.47-.29z"/>
-                    </svg>
-                    <span>Enquire on WhatsApp</span>
-                </a>
-            </div>
 
             <!-- Assurance Highlights -->
             <div style="border-top: 1px solid var(--border-subtle); padding-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.85rem; color: var(--text-secondary);">

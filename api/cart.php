@@ -50,7 +50,8 @@ try {
             if ($newTotalQty > $product['stock']) {
                 echo json_encode([
                     'success' => false, 
-                    'message' => 'Only ' . $product['stock'] . ' pieces available in stock.'
+                    'message' => 'Maximum available quantity reached for this piece.',
+                    'max_reached' => true
                 ]);
                 exit;
             }
@@ -103,7 +104,8 @@ try {
             if ($quantity > $item['stock']) {
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Only ' . $item['stock'] . ' pieces available in stock for ' . $item['name'] . '.'
+                    'message' => 'Maximum available quantity reached for this piece.',
+                    'max_reached' => true
                 ]);
                 exit;
             }

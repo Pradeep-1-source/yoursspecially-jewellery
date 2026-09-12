@@ -126,7 +126,7 @@ require_once __DIR__ . '/includes/header.php';
                                             <span style="font-size: 0.78rem; color: var(--text-muted);">SKU: <?= e($item['sku']) ?></span>
                                             <?php if ($isOverStock): ?>
                                                 <div style="color: #DC2626; font-size: 0.78rem; font-weight: 600; margin-top: 3px;">
-                                                    Only <?= $item['stock'] ?> currently in stock. Please reduce quantity.
+                                                    Selected quantity exceeds available stock. Please reduce quantity to proceed.
                                                 </div>
                                             <?php endif; ?>
                                         </div>

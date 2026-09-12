@@ -1,19 +1,75 @@
 /**
  * YoursSpeciallyJewellery - Main Client Interactive Engine
  * Handles Hero Banner Carousel, Mobile Navigation, AJAX Cart, 
- * Product Gallery Zoom, and Luxury Micro-Interactions
+ * Product Gallery Zoom, Wishlist (localStorage), Scroll Restoration,
+ * Buy Now Guest Flow, and Luxury Micro-Interactions
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    initScrollRestoration();
     initHeroCarousel();
     initMobileNav();
     initProductGallery();
     initAjaxCart();
+    initWishlist();
+    initBuyNow();
     initToasts();
 });
 
 /* ----------------------------------------------------
-   1. HERO PROMOTIONAL BANNER CAROUSEL
+   1. PRODUCT LIST SCROLL RESTORATION
+   ---------------------------------------------------- */
+function initScrollRestoration() {
+    const isListingPage = window.location.pathname.endsWith('products.php') || 
+                          window.location.pathname.endsWith('index.php') || 
+                          window.location.pathname.endsWith('/');
+
+    if (isListingPage) {
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+
+        const scrollKey = 'ysj_scroll_' + window.location.pathname + window.location.search;
+        const savedY = sessionStorage.getItem(scrollKey);
+
+        if (savedY !== null) {
+            const targetY = parseInt(savedY, 10);
+            // Restore immediately and after images/layout settle
+            window.scrollTo(0, targetY);
+            requestAnimationFrame(() => {
+                window.scrollTo(0, targetY);
+            });
+            setTimeout(() => {
+                window.scrollTo(0, targetY);
+            }, 60);
+        }
+
+        // Intercept clicks on links pointing to product detail pages
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a');
+            if (!link || !link.href) return;
+
+            if (link.href.includes('product.php')) {
+                sessionStorage.setItem(scrollKey, window.scrollY.toString());
+                sessionStorage.setItem('ysj_last_listing_url', window.location.href);
+            }
+        });
+    }
+
+    // On pageshow (fires on browser Back / Forward buttons)
+    window.addEventListener('pageshow', (event) => {
+        if (isListingPage) {
+            const scrollKey = 'ysj_scroll_' + window.location.pathname + window.location.search;
+            const savedY = sessionStorage.getItem(scrollKey);
+            if (savedY !== null) {
+                window.scrollTo(0, parseInt(savedY, 10));
+            }
+        }
+    });
+}
+
+/* ----------------------------------------------------
+   2. HERO PROMOTIONAL BANNER CAROUSEL
    ---------------------------------------------------- */
 function initHeroCarousel() {
     const slider = document.querySelector('.hero-slider');
@@ -107,7 +163,7 @@ function initHeroCarousel() {
 }
 
 /* ----------------------------------------------------
-   2. MOBILE NAVIGATION DRAWER
+   3. MOBILE NAVIGATION DRAWER
    ---------------------------------------------------- */
 function initMobileNav() {
     const toggleBtn = document.querySelector('.mobile-menu-btn');
@@ -135,7 +191,7 @@ function initMobileNav() {
 }
 
 /* ----------------------------------------------------
-   3. PRODUCT DETAIL GALLERY & IMAGE ZOOM
+   4. PRODUCT DETAIL GALLERY & IMAGE ZOOM
    ---------------------------------------------------- */
 function initProductGallery() {
     const mainImg = document.getElementById('mainGalleryImg');
@@ -154,7 +210,7 @@ function initProductGallery() {
 }
 
 /* ----------------------------------------------------
-   4. AJAX CART OPERATIONS
+   5. AJAX CART OPERATIONS
    ---------------------------------------------------- */
 function initAjaxCart() {
     // Add to cart buttons (Product cards and detail page)
@@ -210,7 +266,204 @@ function updateCartBadge(count) {
 }
 
 /* ----------------------------------------------------
-   5. LUXURY TOAST NOTIFICATIONS
+   6. BUY NOW INSTANT CHECKOUT FLOW
+   ---------------------------------------------------- */
+window.buyNow = function(productId, quantity = 1) {
+    const qtyInput = document.querySelector('#productQuantity');
+    const finalQty = qtyInput ? parseInt(qtyInput.value) || 1 : quantity;
+
+    const formData = new FormData();
+    formData.append('action', 'add');
+    formData.append('product_id', productId);
+    formData.append('quantity', finalQty);
+
+    fetch('api/cart.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = 'checkout.php';
+        } else {
+            showToast('error', data.message || 'Unable to proceed to checkout.');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('error', 'Network error. Please try again.');
+    });
+};
+
+function initBuyNow() {
+    document.body.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-buy-now');
+        if (!btn) return;
+
+        e.preventDefault();
+        const productId = btn.dataset.productId;
+        if (productId) {
+            window.buyNow(productId, 1);
+        }
+    });
+}
+
+/* ----------------------------------------------------
+   7. WISHLIST ENGINE (LOCALSTORAGE)
+   ---------------------------------------------------- */
+const WISHLIST_KEY = 'ysj_wishlist';
+
+function getWishlist() {
+    try {
+        const stored = localStorage.getItem(WISHLIST_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+        console.error('Error reading wishlist', e);
+        return [];
+    }
+}
+
+function saveWishlist(items) {
+    try {
+        localStorage.setItem(WISHLIST_KEY, JSON.stringify(items));
+        updateWishlistBadges();
+        syncWishlistButtons();
+    } catch (e) {
+        console.error('Error saving wishlist', e);
+    }
+}
+
+function isInWishlist(productId) {
+    const list = getWishlist();
+    return list.some(item => String(item.id) === String(productId));
+}
+
+function toggleWishlist(product) {
+    let list = getWishlist();
+    const index = list.findIndex(item => String(item.id) === String(product.id));
+
+    if (index > -1) {
+        list.splice(index, 1);
+        saveWishlist(list);
+        showToast('info', 'Removed from your Wishlist.');
+        return false;
+    } else {
+        list.push(product);
+        saveWishlist(list);
+        showToast('success', 'Saved to your Wishlist!');
+        return true;
+    }
+}
+
+function updateWishlistBadges() {
+    const list = getWishlist();
+    const count = list.length;
+
+    const badges = document.querySelectorAll('.wishlist-count-badge');
+    badges.forEach(b => {
+        b.textContent = count;
+        b.style.display = count > 0 ? 'flex' : 'none';
+    });
+
+    const textCounters = document.querySelectorAll('.wishlist-count-text');
+    textCounters.forEach(t => {
+        t.textContent = count;
+    });
+}
+
+function syncWishlistButtons() {
+    const buttons = document.querySelectorAll('.wishlist-toggle-btn');
+    buttons.forEach(btn => {
+        const pid = btn.dataset.productId;
+        if (pid && isInWishlist(pid)) {
+            btn.classList.add('active');
+            btn.setAttribute('aria-label', 'Remove from Wishlist');
+            btn.setAttribute('title', 'Remove from Wishlist');
+        } else {
+            btn.classList.remove('active');
+            btn.setAttribute('aria-label', 'Add to Wishlist');
+            btn.setAttribute('title', 'Add to Wishlist');
+        }
+    });
+}
+
+function initWishlist() {
+    updateWishlistBadges();
+    syncWishlistButtons();
+
+    // Delegate click on wishlist toggle buttons
+    document.body.addEventListener('click', function(e) {
+        const btn = e.target.closest('.wishlist-toggle-btn');
+        if (!btn) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const product = {
+            id: btn.dataset.productId,
+            name: btn.dataset.name || '',
+            slug: btn.dataset.slug || '',
+            price: btn.dataset.price || '0',
+            sale_price: btn.dataset.salePrice || '',
+            image: btn.dataset.image || '',
+            sku: btn.dataset.sku || '',
+            in_stock: btn.dataset.inStock !== '0'
+        };
+
+        const added = toggleWishlist(product);
+
+        // If on wishlist.php, re-render wishlist page
+        if (typeof window.renderWishlistPage === 'function') {
+            window.renderWishlistPage();
+        }
+    });
+
+    // Listen for storage events across tabs
+    window.addEventListener('storage', (e) => {
+        if (e.key === WISHLIST_KEY) {
+            updateWishlistBadges();
+            syncWishlistButtons();
+            if (typeof window.renderWishlistPage === 'function') {
+                window.renderWishlistPage();
+            }
+        }
+    });
+}
+
+/* ----------------------------------------------------
+   8. QUANTITY CONTROLLER (STRICT STOCK CAP & NO STOCK COUNT)
+   ---------------------------------------------------- */
+window.updateQty = function(delta) {
+    const input = document.getElementById('productQuantity');
+    if (!input) return;
+
+    let currentVal = parseInt(input.value) || 1;
+    const maxLimit = input.getAttribute('max') ? parseInt(input.getAttribute('max'), 10) : 999;
+    const plusBtn = input.parentElement ? input.parentElement.querySelector('.qty-btn:last-child') : null;
+
+    let newVal = currentVal + delta;
+    if (newVal < 1) newVal = 1;
+
+    if (newVal >= maxLimit) {
+        newVal = maxLimit;
+        if (plusBtn) {
+            plusBtn.disabled = true;
+            plusBtn.style.opacity = '0.4';
+            plusBtn.style.cursor = 'not-allowed';
+        }
+    } else {
+        if (plusBtn) {
+            plusBtn.disabled = false;
+            plusBtn.style.opacity = '1';
+            plusBtn.style.cursor = 'pointer';
+        }
+    }
+
+    input.value = newVal;
+};
+
+/* ----------------------------------------------------
+   9. LUXURY TOAST NOTIFICATIONS
    ---------------------------------------------------- */
 function showToast(type, message) {
     let container = document.querySelector('.toast-container');
@@ -232,11 +485,11 @@ function showToast(type, message) {
 
     const toast = document.createElement('div');
     toast.className = `luxury-toast ${type}`;
-    const bg = type === 'success' ? '#5B1B36' : '#C9654E';
+    const bg = type === 'success' ? '#5B1B36' : (type === 'info' ? '#3F1024' : '#C9654E');
     toast.style.cssText = `
         background: ${bg};
         color: #FFFFFF;
-        padding: 14px 22px;
+        padding: 14px 20px;
         border-radius: 6px;
         font-size: 0.9rem;
         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
@@ -246,7 +499,7 @@ function showToast(type, message) {
         pointer-events: auto;
         opacity: 0;
         transform: translateY(-15px);
-        transition: all 0.35s ease;
+        transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         max-width: 360px;
         border-left: 4px solid #C5A059;
     `;
@@ -267,5 +520,5 @@ function showToast(type, message) {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(-15px)';
         setTimeout(() => toast.remove(), 400);
-    }, 4500);
+    }, 4000);
 }

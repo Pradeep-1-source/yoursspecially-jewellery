@@ -55,7 +55,7 @@ $businessAddress = getSetting('business_address', 'Boutique Studio, Luxury Distr
             <div class="footer-col">
                 <h4>Customer Care</h4>
                 <ul class="footer-links">
-                    <li><a href="<?= BASE_URL ?>account.php">My Account</a></li>
+                    <li><a href="<?= BASE_URL ?>wishlist.php">My Wishlist</a></li>
                     <li><a href="<?= BASE_URL ?>orders.php">Track Orders</a></li>
                     <li><a href="<?= BASE_URL ?>shipping-policy.php">Shipping Policy</a></li>
                     <li><a href="<?= BASE_URL ?>refund-policy.php">Returns & Refunds</a></li>

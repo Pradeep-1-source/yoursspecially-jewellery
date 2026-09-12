@@ -227,15 +227,24 @@ require_once __DIR__ . '/includes/header.php';
                                 <?php endif; ?>
 
                                 <div class="product-actions-floating">
+                                    <button type="button" class="wishlist-toggle-btn" 
+                                            data-product-id="<?= $prod['id'] ?>"
+                                            data-name="<?= e($prod['name']) ?>"
+                                            data-slug="<?= e($prod['slug']) ?>"
+                                            data-price="<?= e($prod['price']) ?>"
+                                            data-sale-price="<?= e($prod['sale_price'] ?? '') ?>"
+                                            data-image="<?= e($prod['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>"
+                                            data-sku="<?= e($prod['sku']) ?>"
+                                            data-in-stock="<?= ($prod['stock'] > 0) ? '1' : '0' ?>"
+                                            title="Save to Wishlist" aria-label="Save to Wishlist">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2">
+                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                        </svg>
+                                    </button>
                                     <a href="<?= BASE_URL ?>product.php?slug=<?= urlencode($prod['slug']) ?>" class="floating-action-btn" title="View Details">
                                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                             <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                    </a>
-                                    <a href="https://wa.me/91<?= preg_replace('/\D/', '', getSetting('whatsapp_number', '9940474469')) ?>?text=<?= urlencode("Hi YoursSpecially, I would like to enquire about " . $prod['name'] . " (" . $prod['sku'] . ").") ?>" target="_blank" class="floating-action-btn" title="Enquire on WhatsApp">
-                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.23 8.23 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.42 0-2.82-.37-4.06-1.07l-.29-.17-3.12.82.83-3.04-.19-.3a8.19 8.19 0 0 1-1.26-4.48c0-4.54 3.7-8.24 8.24-8.24m4.52 11.59c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.67-1.25-1.49-1.4-1.74-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1s.9 2.44 1.03 2.61c.13.17 1.77 2.7 4.28 3.79.6.26 1.07.41 1.43.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.22-.17-.47-.29z"/>
                                         </svg>
                                     </a>
                                 </div>
@@ -257,7 +266,12 @@ require_once __DIR__ . '/includes/header.php';
                                 </div>
 
                                 <div class="product-card-footer">
-                                    <button class="btn-add-cart ajax-add-to-cart" data-product-id="<?= $prod['id'] ?>">Add to Bag</button>
+                                    <?php if ((int)$prod['stock'] > 0): ?>
+                                        <button type="button" class="btn-add-cart ajax-add-to-cart" data-product-id="<?= $prod['id'] ?>">Add to Bag</button>
+                                        <button type="button" class="btn-buy-now" data-product-id="<?= $prod['id'] ?>" onclick="buyNow(<?= $prod['id'] ?>)">Buy Now</button>
+                                    <?php else: ?>
+                                        <span class="btn-out-of-stock">Sold Out</span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>

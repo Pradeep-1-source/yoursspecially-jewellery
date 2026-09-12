@@ -88,15 +88,13 @@ $customer = currentCustomer();
                     </svg>
                 </button>
 
-                <!-- Customer Account -->
-                <div class="account-menu-wrapper" style="position: relative;">
-                    <a href="<?= isCustomerLoggedIn() ? BASE_URL . 'account.php' : BASE_URL . 'login.php' ?>" class="action-icon-btn" title="<?= isCustomerLoggedIn() ? 'My Account' : 'Login / Register' ?>">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                    </a>
-                </div>
+                <!-- Wishlist Action -->
+                <a href="<?= BASE_URL ?>wishlist.php" class="action-icon-btn wishlist-header-btn" title="View Wishlist" style="position: relative;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                    <span class="badge-count wishlist-count-badge" style="display: none;">0</span>
+                </a>
 
                 <!-- Shopping Bag -->
                 <a href="<?= BASE_URL ?>cart.php" class="action-icon-btn" title="View Shopping Bag" style="position: relative;">
@@ -157,15 +155,14 @@ function toggleSearchModal() {
         <li><a href="<?= BASE_URL ?>contact.php" style="color:var(--primary);">Contact Boutique</a></li>
     </ul>
 
-    <div style="margin-top:2.5rem; padding-top:1.5rem; border-top:1px solid var(--border-subtle);">
-        <?php if (isCustomerLoggedIn()): ?>
-            <p style="font-size:0.88rem; color:var(--text-secondary); margin-bottom:0.8rem;">Signed in as <strong><?= e($customer['name'] ?? 'Valued Customer') ?></strong></p>
-            <a href="<?= BASE_URL ?>account.php" class="btn btn-outline btn-block btn-sm" style="margin-bottom:0.5rem;">My Account</a>
-            <a href="<?= BASE_URL ?>logout.php" class="btn btn-primary btn-block btn-sm">Log Out</a>
-        <?php else: ?>
-            <a href="<?= BASE_URL ?>login.php" class="btn btn-primary btn-block btn-sm" style="margin-bottom:0.5rem;">Login</a>
-            <a href="<?= BASE_URL ?>register.php" class="btn btn-outline btn-block btn-sm">Create Account</a>
-        <?php endif; ?>
+    <div style="margin-top:2.5rem; padding-top:1.5rem; border-top:1px solid var(--border-subtle); display:flex; flex-direction:column; gap:0.5rem;">
+        <a href="<?= BASE_URL ?>wishlist.php" class="btn btn-outline btn-block btn-sm">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; vertical-align:middle; margin-right:6px;">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+            My Wishlist (<span class="wishlist-count-text">0</span>)
+        </a>
+        <a href="<?= BASE_URL ?>orders.php" class="btn btn-primary btn-block btn-sm">Track My Order</a>
     </div>
 </div>
 <div class="drawer-backdrop"></div>

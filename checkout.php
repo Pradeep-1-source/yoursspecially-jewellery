@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stkCheck->execute([$ci['product_id']]);
         $currStk = $stkCheck->fetch();
         if (!$currStk || $currStk['stock'] < $ci['quantity']) {
-            $errors[] = 'Sorry, ' . ($currStk['name'] ?? 'an item') . ' does not have sufficient stock remaining (' . ($currStk['stock'] ?? 0) . ' available).';
+            $errors[] = 'Sorry, ' . ($currStk['name'] ?? 'an item') . ' is currently out of stock or exceeds available quantity. Please adjust your shopping bag.';
         }
     }
 

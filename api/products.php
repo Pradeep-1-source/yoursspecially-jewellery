@@ -19,6 +19,8 @@ try {
         $product = $stmt->fetch();
 
         if ($product) {
+            $product['in_stock'] = (int)$product['stock'] > 0;
+            unset($product['stock']);
             echo json_encode(['success' => true, 'product' => $product]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Product not found.']);
@@ -34,7 +36,7 @@ try {
         }
 
         $term = '%' . $q . '%';
-        $stmt = $db->prepare("SELECT id, name, slug, price, sale_price, main_image, sku FROM products WHERE (name LIKE ? OR sku LIKE ?) AND status = 1 ORDER BY id DESC LIMIT 8");
+        $stmt = $db->prepare("SELECT id, name, slug, price, sale_price, main_image, sku, (stock > 0) AS in_stock FROM products WHERE (name LIKE ? OR sku LIKE ?) AND status = 1 ORDER BY id DESC LIMIT 8");
         $stmt->execute([$term, $term]);
         $results = $stmt->fetchAll();
 
@@ -44,7 +46,7 @@ try {
 
     // Default: List active products
     $limit = min(50, max(1, (int)($_GET['limit'] ?? 12)));
-    $stmt = $db->prepare("SELECT id, name, slug, price, sale_price, main_image, sku, stock FROM products WHERE status = 1 ORDER BY id DESC LIMIT ?");
+    $stmt = $db->prepare("SELECT id, name, slug, price, sale_price, main_image, sku, (stock > 0) AS in_stock FROM products WHERE status = 1 ORDER BY id DESC LIMIT ?");
     $stmt->bindValue(1, $limit, PDO::PARAM_INT);
     $stmt->execute();
     $products = $stmt->fetchAll();
