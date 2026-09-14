@@ -1,0 +1,20 @@
+<?php
+/**
+ * YoursSpeciallyJewellery - Production Database Credentials
+ * 
+ * INSTRUCTIONS FOR HOSTINGER:
+ * 1. In Hostinger File Manager, create a copy of this file and name it:
+ *    config/database.production.php
+ * 2. Replace 'YOUR_HOSTINGER_DB_PASSWORD' with your actual Hostinger database password.
+ * 3. Save the file.
+ * 
+ * SECURITY NOTE:
+ * 'database.production.php' is listed in .gitignore and will NEVER be pushed to GitHub.
+ */
+
+return [
+    'DB_HOST' => 'localhost',
+    'DB_NAME' => 'u391621178_yoursjewellery',
+    'DB_USER' => 'u391621178_yoursjewellery',
+    'DB_PASS' => 'YOUR_HOSTINGER_DB_PASSWORD',
+];

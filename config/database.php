@@ -11,6 +11,71 @@ if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
 }
 
 // ==========================================================
+// ENVIRONMENT & CREDENTIALS LOADER (Secure & Non-Tracked)
+// Priority:
+// 1. config/database.production.php (Untracked PHP array)
+// 2. .env file in project root (Untracked key=val pairs)
+// 3. System environment variables (getenv / $_ENV / $_SERVER)
+// 4. Safe defaults (Local development vs Hostinger production)
+// ==========================================================
+$prodConfig = [];
+$prodConfigFile = __DIR__ . '/database.production.php';
+if (file_exists($prodConfigFile)) {
+    $loaded = include $prodConfigFile;
+    if (is_array($loaded)) {
+        $prodConfig = $loaded;
+    }
+}
+
+// Support root .env file if present
+$envFile = dirname(__DIR__) . '/.env';
+if (file_exists($envFile)) {
+    $lines = @file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if (is_array($lines)) {
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || $line[0] === '#') {
+                continue;
+            }
+            if (strpos($line, '=') !== false) {
+                list($envKey, $envVal) = explode('=', $line, 2);
+                $envKey = trim($envKey);
+                $envVal = trim($envVal);
+                $valLen = strlen($envVal);
+                if ($valLen >= 2 && (
+                    ($envVal[0] === '"' && $envVal[$valLen - 1] === '"') ||
+                    ($envVal[0] === "'" && $envVal[$valLen - 1] === "'")
+                )) {
+                    $envVal = substr($envVal, 1, -1);
+                }
+                if (!array_key_exists($envKey, $_SERVER) && !array_key_exists($envKey, $_ENV)) {
+                    putenv("{$envKey}={$envVal}");
+                    $_ENV[$envKey] = $envVal;
+                    $_SERVER[$envKey] = $envVal;
+                }
+            }
+        }
+    }
+}
+
+$getConfigVal = function(string $key, $fallback = '') use ($prodConfig) {
+    if (isset($prodConfig[$key]) && $prodConfig[$key] !== '') {
+        return $prodConfig[$key];
+    }
+    $envVal = getenv($key);
+    if ($envVal !== false && $envVal !== '') {
+        return $envVal;
+    }
+    if (isset($_ENV[$key]) && $_ENV[$key] !== '') {
+        return $_ENV[$key];
+    }
+    if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') {
+        return $_SERVER[$key];
+    }
+    return $fallback;
+};
+
+// ==========================================================
 // DATABASE CONFIGURATION (Supports Localhost & Hostinger)
 // ==========================================================
 $isLocalEnv = (
@@ -20,15 +85,20 @@ $isLocalEnv = (
     php_sapi_name() === 'cli'
 );
 
-$defaultDbName = $isLocalEnv ? 'yoursspecially' : 'u123456789_yoursspecially';
-$defaultDbUser = $isLocalEnv ? 'root' : 'u123456789_dbuser';
-$defaultDbPass = $isLocalEnv ? 'root123' : 'YourStrongDbPassword#2026';
+// Hostinger production database credentials:
+// DB_NAME = u391621178_yoursjewellery
+// DB_USER = u391621178_yoursjewellery
+// DB_HOST = localhost (Hostinger standard MySQL host)
+// DB_PASS = configured separately in config/database.production.php or .env (never hardcoded in Git)
+$defaultDbName = $isLocalEnv ? 'yoursspecially' : 'u391621178_yoursjewellery';
+$defaultDbUser = $isLocalEnv ? 'root' : 'u391621178_yoursjewellery';
+$defaultDbPass = $isLocalEnv ? 'root123' : '';
 
-define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_NAME', getenv('DB_NAME') ?: $defaultDbName);
-define('DB_USER', getenv('DB_USER') ?: $defaultDbUser);
-define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : $defaultDbPass);
-define('DB_CHARSET', 'utf8mb4');
+if (!defined('DB_HOST')) define('DB_HOST', $getConfigVal('DB_HOST', 'localhost') ?: 'localhost');
+if (!defined('DB_NAME')) define('DB_NAME', $getConfigVal('DB_NAME', $defaultDbName));
+if (!defined('DB_USER')) define('DB_USER', $getConfigVal('DB_USER', $defaultDbUser));
+if (!defined('DB_PASS')) define('DB_PASS', $getConfigVal('DB_PASS', $defaultDbPass));
+if (!defined('DB_CHARSET')) define('DB_CHARSET', 'utf8mb4');
 
 /**
  * Returns the singleton PDO database connection instance.
@@ -59,7 +129,7 @@ function getDBConnection(): PDO {
 
             // Provide a graceful, secure message without leaking sensitive server secrets
             if (php_sapi_name() === 'cli') {
-                throw new Exception("Database connection failed. Please verify DB credentials in config/database.php.");
+                throw new Exception("Database connection failed. Please configure DB credentials in config/database.production.php or .env.");
             }
 
             http_response_code(500);
@@ -155,9 +225,9 @@ function getDBConnection(): PDO {
                     <div class="steps">
                         <ol>
                             <li>Log in to your <strong>Hostinger cPanel / hPanel</strong>.</li>
-                            <li>Go to <strong>Databases</strong> &rarr; Create a MySQL database and user.</li>
-                            <li>Import <code>database.sql</code> via <strong>phpMyAdmin</strong>.</li>
-                            <li>Open <code>config/database.php</code> and enter your DB Name, User, and Password.</li>
+                            <li>Go to <strong>Databases</strong> &rarr; Verify your MySQL database (<code>u391621178_yoursjewellery</code>) and user.</li>
+                            <li>Ensure <code>database.sql</code> is imported via <strong>phpMyAdmin</strong>.</li>
+                            <li>In Hostinger <strong>File Manager</strong>, create <code>config/database.production.php</code> (or <code>.env</code>) and add your database password.</li>
                             <li>Refresh this page to launch your jewellery store!</li>
                         </ol>
                     </div>

@@ -68,18 +68,25 @@ Welcome! This guide is written step-by-step for anyone who has never hosted a we
 
 ---
 
-### STEP 7: Update Database Configuration
+### STEP 7: Configure Production Database Password
 1. Still inside Hostinger **File Manager**, navigate into the `config` folder.
-2. Right-click on `database.php` and choose **Edit**.
-3. Locate lines 15–18:
+2. Make a copy of `database.production.php.example` and name the new file:
+   `database.production.php`
+   *(Alternatively, you can create a `.env` file in the root `public_html` directory using `.env.example` as a template).*
+3. Right-click `database.production.php` and choose **Edit**.
+4. Set your Hostinger MySQL credentials:
    ```php
-   define('DB_HOST', 'localhost');
-   define('DB_NAME', 'u123456789_ysj_store'); // Replace with your Hostinger DB Name from Step 1
-   define('DB_USER', 'u123456789_ysj_admin'); // Replace with your Hostinger DB User from Step 2
-   define('DB_PASS', 'YourStrongPassword#2026'); // Replace with your DB Password from Step 2
+   return [
+       'DB_HOST' => 'localhost',
+       'DB_NAME' => 'u391621178_yoursjewellery',
+       'DB_USER' => 'u391621178_yoursjewellery',
+       'DB_PASS' => 'YOUR_ACTUAL_HOSTINGER_PASSWORD',
+   ];
    ```
-4. Update the values with the exact credentials from Steps 1 & 2.
-5. Click **Save & Close**.
+5. Replace `YOUR_ACTUAL_HOSTINGER_PASSWORD` with your Hostinger database password.
+6. Click **Save & Close**.
+
+> **Security Advantage:** `database.production.php` and `.env` are listed in `.gitignore`. Your database password will remain safe on Hostinger and will never be pushed to GitHub!
 
 ---
 

@@ -78,6 +78,7 @@ d:/your jewllery/
 │
 ├── config/                   # Core Configuration & Database
 │   ├── database.php          # Hostinger PDO database connection handler
+│   ├── database.production.php.example # Production database credentials template
 │   └── config.php            # Global site constants, CSRF, price formatter, file uploader
 │
 ├── includes/                 # Common Client Templates
