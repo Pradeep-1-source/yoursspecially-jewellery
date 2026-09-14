@@ -159,8 +159,33 @@ h4 { font-size: 1.25rem; }
 }
 
 @media (max-width: 768px) {
+    .container {
+        padding: 0 1rem;
+    }
     .section-padding {
-        padding: 3.5rem 0;
+        padding: 2.75rem 0;
+    }
+    input, select, textarea, .form-control {
+        font-size: 16px !important; /* Prevents iOS auto-zooming on focus */
+    }
+}
+
+@media (max-width: 375px) {
+    .container {
+        padding: 0 0.75rem;
+    }
+}
+
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 640px) {
+    .form-grid-2 {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
     }
 }
 
@@ -1610,4 +1635,55 @@ h4 { font-size: 1.25rem; }
 .drawer-backdrop.active {
     opacity: 1;
     visibility: visible;
+}
+
+/* ----------------------------------------------------
+   Responsive Enhancements
+   ---------------------------------------------------- */
+/* Hide desktop navigation on tablets and smaller */
+@media (max-width: 992px) {
+    .main-nav {
+        display: none;
+    }
+    .mobile-menu-btn {
+        display: inline-flex;
+    }
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+/* Mobile first adjustments */
+@media (max-width: 576px) {
+    .main-nav { display: none; }
+    .mobile-menu-btn { display: inline-flex; }
+    .product-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .brand-logo-img {
+        width: 100px;
+        height: auto;
+    }
+    .header-inner {
+        padding: 0.5rem 0;
+    }
+    .header-actions button, .header-actions a {
+        min-height: 44px;
+    }
+}
+/* Ensure product cards have adequate touch targets */
+.product-card {
+    padding: 1rem;
+}
+.product-card .product-thumb {
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+/* Mobile drawer overlay adjustments */
+.drawer-backdrop.active {
+    opacity: 0.5;
+}
+
+/* Mobile menu button default hidden on larger screens */
+.mobile-menu-btn {
+    display: none;
 }

@@ -163,7 +163,7 @@ function initHeroCarousel() {
 }
 
 /* ----------------------------------------------------
-   3. MOBILE NAVIGATION DRAWER
+   3. MOBILE NAVIGATION DRAWER & ACCORDION
    ---------------------------------------------------- */
 function initMobileNav() {
     const toggleBtn = document.querySelector('.mobile-menu-btn');
@@ -185,9 +185,41 @@ function initMobileNav() {
         document.body.style.overflow = '';
     }
 
-    toggleBtn.addEventListener('click', openDrawer);
+    toggleBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        openDrawer();
+    });
+
     if (backdrop) backdrop.addEventListener('click', closeDrawer);
     if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+
+    // Close when user selects any navigation link inside the drawer
+    const navLinks = drawer.querySelectorAll('a');
+    navLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            // Give time for navigation if on-page or let standard navigation occur
+            closeDrawer();
+        });
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && drawer.classList.contains('open')) {
+            closeDrawer();
+        }
+    });
+
+    // Collections Submenu Accordion Toggle
+    const accordionToggle = drawer.querySelector('.drawer-accordion-toggle');
+    const parentItem = drawer.querySelector('.drawer-item-has-children');
+    if (accordionToggle && parentItem) {
+        accordionToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const isOpen = parentItem.classList.toggle('expanded');
+            accordionToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+    }
 }
 
 /* ----------------------------------------------------

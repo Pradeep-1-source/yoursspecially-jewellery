@@ -136,36 +136,68 @@ function toggleSearchModal() {
 </script>
 
 <!-- Mobile Navigation Drawer -->
-<div class="mobile-nav-drawer">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem; padding-bottom:1rem; border-bottom:1px solid var(--border-subtle);">
-        <div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:var(--primary);">YoursSpecially</div>
-        <button class="drawer-close-btn" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--primary);">&times;</button>
+<div class="mobile-nav-drawer" id="mobileNavDrawer" aria-label="Mobile Navigation Menu">
+    <div class="drawer-header">
+        <div class="drawer-brand">
+            <img src="<?= BASE_URL ?>assets/images/logo.jpeg" alt="YoursSpecially Logo" class="drawer-logo-img">
+            <div>
+                <span class="drawer-brand-name">YoursSpecially</span>
+                <span class="drawer-brand-sub">JEWELLERY</span>
+            </div>
+        </div>
+        <button class="drawer-close-btn" aria-label="Close Navigation Menu">&times;</button>
     </div>
 
-    <ul style="display:flex; flex-direction:column; gap:1.25rem; font-size:1rem; text-transform:uppercase; letter-spacing:1px; font-weight:500;">
-        <li><a href="<?= BASE_URL ?>index.php" style="color:var(--primary);">Home</a></li>
-        <li><a href="<?= BASE_URL ?>products.php" style="color:var(--primary);">All Jewellery</a></li>
-        <li><a href="<?= BASE_URL ?>products.php?category=necklaces" style="color:var(--primary);">Necklaces</a></li>
-        <li><a href="<?= BASE_URL ?>products.php?category=earrings" style="color:var(--primary);">Earrings</a></li>
-        <li><a href="<?= BASE_URL ?>products.php?category=rings" style="color:var(--primary);">Rings</a></li>
-        <li><a href="<?= BASE_URL ?>products.php?category=bracelets" style="color:var(--primary);">Bracelets</a></li>
-        <li><a href="<?= BASE_URL ?>products.php?category=bangles" style="color:var(--primary);">Bangles</a></li>
-        <li><a href="<?= BASE_URL ?>products.php?category=jewellery-sets" style="color:var(--primary);">Jewellery Sets</a></li>
-        <li><a href="<?= BASE_URL ?>about.php" style="color:var(--primary);">Our Story</a></li>
-        <li><a href="<?= BASE_URL ?>contact.php" style="color:var(--primary);">Contact Boutique</a></li>
-    </ul>
+    <nav class="drawer-nav">
+        <ul class="drawer-menu">
+            <li class="drawer-item">
+                <a href="<?= BASE_URL ?>index.php" class="drawer-link <?= (basename($_SERVER['PHP_SELF']) == 'index.php') ? 'active' : '' ?>">Home</a>
+            </li>
+            <li class="drawer-item drawer-item-has-children">
+                <div class="drawer-accordion-header">
+                    <a href="<?= BASE_URL ?>products.php" class="drawer-link <?= (basename($_SERVER['PHP_SELF']) == 'products.php') ? 'active' : '' ?>">Collections</a>
+                    <button type="button" class="drawer-accordion-toggle" aria-label="Toggle Collections Submenu" aria-expanded="false">
+                        <svg class="accordion-arrow-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                </div>
+                <ul class="drawer-submenu" id="collectionsSubmenu">
+                    <li><a href="<?= BASE_URL ?>products.php" class="drawer-sublink">All Jewellery</a></li>
+                    <li><a href="<?= BASE_URL ?>products.php?category=necklaces" class="drawer-sublink">Necklaces</a></li>
+                    <li><a href="<?= BASE_URL ?>products.php?category=earrings" class="drawer-sublink">Earrings</a></li>
+                    <li><a href="<?= BASE_URL ?>products.php?category=rings" class="drawer-sublink">Rings</a></li>
+                    <li><a href="<?= BASE_URL ?>products.php?category=bracelets" class="drawer-sublink">Bracelets</a></li>
+                    <li><a href="<?= BASE_URL ?>products.php?category=bangles" class="drawer-sublink">Bangles</a></li>
+                    <li><a href="<?= BASE_URL ?>products.php?category=jewellery-sets" class="drawer-sublink">Jewellery Sets</a></li>
+                </ul>
+            </li>
+            <li class="drawer-item">
+                <a href="<?= BASE_URL ?>about.php" class="drawer-link <?= (basename($_SERVER['PHP_SELF']) == 'about.php') ? 'active' : '' ?>">About</a>
+            </li>
+            <li class="drawer-item">
+                <a href="<?= BASE_URL ?>contact.php" class="drawer-link <?= (basename($_SERVER['PHP_SELF']) == 'contact.php') ? 'active' : '' ?>">Contact</a>
+            </li>
+            <li class="drawer-item">
+                <a href="<?= BASE_URL ?>wishlist.php" class="drawer-link drawer-link-flex">
+                    <span>Wishlist</span>
+                    <span class="badge-count wishlist-count-badge" style="position:static; display:none;">0</span>
+                </a>
+            </li>
+            <li class="drawer-item">
+                <a href="<?= BASE_URL ?>cart.php" class="drawer-link drawer-link-flex">
+                    <span>Cart</span>
+                    <span class="badge-count cart-count-badge" style="position:static; display: <?= $cartCount > 0 ? 'inline-flex' : 'none' ?>;"><?= $cartCount ?></span>
+                </a>
+            </li>
+        </ul>
+    </nav>
 
-    <div style="margin-top:2.5rem; padding-top:1.5rem; border-top:1px solid var(--border-subtle); display:flex; flex-direction:column; gap:0.5rem;">
-        <a href="<?= BASE_URL ?>wishlist.php" class="btn btn-outline btn-block btn-sm">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; vertical-align:middle; margin-right:6px;">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-            </svg>
-            My Wishlist (<span class="wishlist-count-text">0</span>)
-        </a>
-        <a href="<?= BASE_URL ?>orders.php" class="btn btn-primary btn-block btn-sm">Track My Order</a>
+    <div class="drawer-footer">
+        <a href="<?= BASE_URL ?>orders.php" class="btn btn-outline btn-block btn-sm">Track My Order</a>
     </div>
 </div>
-<div class="drawer-backdrop"></div>
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
 
 <!-- Flash Message Notifications -->
 <?php $flash = getFlash(); if ($flash): ?>
