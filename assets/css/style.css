@@ -350,6 +350,20 @@ h4 { font-size: 1.25rem; }
     cursor: pointer;
 }
 
+@media (max-width: 991px) {
+    .main-nav {
+        display: none !important;
+    }
+    .mobile-menu-btn {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        padding: 6px;
+    }
+}
+
 /* ----------------------------------------------------
    Hero Promotional Banner & Carousel
    ---------------------------------------------------- */
@@ -465,6 +479,31 @@ h4 { font-size: 1.25rem; }
 
 .slider-arrow.prev { left: 24px; }
 .slider-arrow.next { right: 24px; }
+
+@media (max-width: 768px) {
+    .slider-arrow {
+        display: none !important;
+    }
+}
+
+.hero-btn-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+    .hero-btn-group {
+        gap: 0.5rem;
+    }
+    .hero-btn-group .btn {
+        flex: 1 1 calc(50% - 0.3rem);
+        padding: 0.65rem 0.6rem;
+        font-size: 0.74rem;
+        letter-spacing: 0.8px;
+        white-space: nowrap;
+    }
+}
 
 .slider-dots {
     position: absolute;

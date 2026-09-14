@@ -30,8 +30,30 @@ $customer = currentCustomer();
     <!-- Favicon -->
     <link rel="icon" type="image/jpeg" href="<?= BASE_URL ?>assets/images/logo.jpeg">
 
-    <!-- CSS Master Stylesheet -->
-    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
+    <!-- CSS Master Stylesheet with Cache Busting -->
+    <?php
+    $cssFile = dirname(__DIR__) . '/assets/css/style.css';
+    $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : '2.2';
+    ?>
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css?v=<?= $cssVersion ?>">
+
+    <!-- Critical Mobile Header Styles to Guarantee Clean Mobile View -->
+    <style>
+        @media (max-width: 991px) {
+            .main-nav { display: none !important; }
+            .mobile-menu-btn { display: inline-flex !important; }
+            .header-inner { height: 62px; gap: 0.4rem; }
+            .brand-logo-img { height: 38px; width: 38px; }
+            .brand-logo-text { font-size: 1.18rem; }
+            .brand-logo-sub { font-size: 0.52rem; }
+            .slider-arrow { display: none !important; }
+        }
+        @media (max-width: 480px) {
+            .brand-logo-sub { display: none !important; }
+            .header-actions { gap: 0.2rem; }
+            .action-icon-btn { width: 34px; height: 34px; padding: 5px; }
+        }
+    </style>
 </head>
 <body>
 

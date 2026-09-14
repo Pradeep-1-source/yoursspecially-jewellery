@@ -72,7 +72,7 @@ require_once __DIR__ . '/includes/header.php';
                         <?php if (!empty($banner['subtitle'])): ?>
                             <p class="hero-subtitle"><?= e($banner['subtitle']) ?></p>
                         <?php endif; ?>
-                        <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+                        <div class="hero-btn-group">
                             <a href="<?= BASE_URL . e($banner['button_link'] ?: 'products.php') ?>" class="btn btn-primary">
                                 <?= e($banner['button_text'] ?: 'Shop Now') ?>
                             </a>

@@ -95,7 +95,11 @@ $businessAddress = getSetting('business_address', 'Boutique Studio, Luxury Distr
     <span>Chat with Stylist</span>
 </a>
 
-<!-- Master Script -->
-<script src="<?= BASE_URL ?>assets/js/main.js"></script>
+<!-- Master Script with Cache Busting -->
+<?php
+$jsFile = dirname(__DIR__) . '/assets/js/main.js';
+$jsVersion = file_exists($jsFile) ? filemtime($jsFile) : '2.2';
+?>
+<script src="<?= BASE_URL ?>assets/js/main.js?v=<?= $jsVersion ?>"></script>
 </body>
 </html>
