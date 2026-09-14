@@ -153,7 +153,7 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 
     <!-- Main Content Layout (Sidebar Filters + Grid) -->
-    <div style="display: grid; grid-template-columns: 240px 1fr; gap: 2.5rem; align-items: start;">
+    <div class="catalog-layout">
         <!-- Filters Sidebar -->
         <aside style="background: #fff; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
             <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.6rem;">Categories</h3>
@@ -209,7 +209,7 @@ require_once __DIR__ . '/includes/header.php';
                     <a href="<?= BASE_URL ?>products.php" class="btn btn-primary">Browse All Creations</a>
                 </div>
             <?php else: ?>
-                <div class="product-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="product-grid">
                     <?php foreach ($products as $prod): 
                         $hasDiscount = !empty($prod['sale_price']) && $prod['sale_price'] < $prod['price'];
                         $discountPercent = $hasDiscount ? round((($prod['price'] - $prod['sale_price']) / $prod['price']) * 100) : 0;

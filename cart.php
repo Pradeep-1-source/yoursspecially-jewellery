@@ -97,7 +97,7 @@ require_once __DIR__ . '/includes/header.php';
 
         <div class="cart-layout">
             <!-- Left: Items Table -->
-            <div>
+            <div class="cart-table-wrap">
                 <table class="cart-table">
                     <thead>
                         <tr>
