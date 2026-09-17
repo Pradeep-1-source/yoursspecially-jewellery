@@ -16,7 +16,7 @@ $customer = currentCustomer();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <title><?= e($pageTitle) ?></title>
     <meta name="description" content="<?= e($metaDescription) ?>">
     
@@ -33,18 +33,18 @@ $customer = currentCustomer();
     <!-- CSS Master Stylesheet with Cache Busting -->
     <?php
     $cssFile = dirname(__DIR__) . '/assets/css/style.css';
-    $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : '2.2';
+    $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : '2.3';
     ?>
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css?v=<?= $cssVersion ?>">
 
-    <!-- Critical Mobile Header Styles to Guarantee Clean Mobile View -->
+    <!-- Critical Mobile Header Styles to Guarantee Clean Mobile View Across All Devices -->
     <style>
         @media (max-width: 991px) {
             .main-nav { display: none !important; }
             .mobile-menu-btn { display: inline-flex !important; }
-            .header-inner { height: 62px; gap: 0.4rem; }
-            .brand-logo-img { height: 38px; width: 38px; }
-            .brand-logo-text { font-size: 1.18rem; }
+            .header-inner { height: 60px; gap: 0.35rem; }
+            .brand-logo-img { height: 36px; width: 36px; }
+            .brand-logo-text { font-size: 1.15rem; }
             .brand-logo-sub { font-size: 0.52rem; }
             .slider-arrow { display: none !important; }
         }
@@ -52,6 +52,13 @@ $customer = currentCustomer();
             .brand-logo-sub { display: none !important; }
             .header-actions { gap: 0.2rem; }
             .action-icon-btn { width: 34px; height: 34px; padding: 5px; }
+        }
+        @media (max-width: 380px) {
+            .header-inner { height: 56px; gap: 0.2rem; }
+            .brand-logo-img { height: 32px; width: 32px; }
+            .brand-logo-text { font-size: 1.05rem; }
+            .header-actions { gap: 0.15rem; }
+            .action-icon-btn { width: 30px; height: 30px; padding: 4px; }
         }
     </style>
 </head>

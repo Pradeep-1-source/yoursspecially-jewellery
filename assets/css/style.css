@@ -854,7 +854,8 @@ h4 { font-size: 1.25rem; }
 }
 
 .btn-add-cart {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     background: var(--bg-cream);
     color: var(--primary);
     border: 1px solid var(--border-subtle);
@@ -881,7 +882,8 @@ h4 { font-size: 1.25rem; }
 }
 
 .btn-buy-now {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     background: var(--secondary);
     color: #ffffff;
     border: 1px solid var(--secondary);
@@ -1921,16 +1923,36 @@ h4 { font-size: 1.25rem; }
     }
     .product-grid {
         grid-template-columns: repeat(2, 1fr) !important;
-        gap: 0.75rem !important;
+        gap: 0.65rem !important;
     }
     .product-info {
-        padding: 0.85rem 0.65rem 0.75rem;
+        padding: 0.75rem 0.5rem 0.6rem !important;
     }
     .product-title {
-        font-size: 0.95rem;
+        font-size: 0.92rem !important;
+        line-height: 1.35 !important;
+        min-height: 2.5rem !important;
+        max-height: 2.5rem !important;
+        margin-bottom: 0.45rem !important;
+    }
+    .product-price-box {
+        gap: 0.4rem !important;
+        margin-bottom: 0.75rem !important;
     }
     .price-current {
-        font-size: 1.05rem;
+        font-size: 1rem !important;
+    }
+    .price-original {
+        font-size: 0.82rem !important;
+    }
+    .product-card-footer {
+        gap: 0.3rem !important;
+    }
+    .btn-add-cart,
+    .btn-buy-now {
+        padding: 0.5rem 0.25rem !important;
+        font-size: 0.68rem !important;
+        letter-spacing: 0.3px !important;
     }
     .product-detail-layout {
         grid-template-columns: 1fr !important;
@@ -1945,7 +1967,10 @@ h4 { font-size: 1.25rem; }
 
 @media (max-width: 480px) {
     .container {
-        padding: 0 0.85rem;
+        padding: 0 0.65rem !important;
+    }
+    .section-padding {
+        padding: 2.25rem 0 !important;
     }
     .hero-slider {
         min-height: 250px;
@@ -1953,15 +1978,192 @@ h4 { font-size: 1.25rem; }
     .hero-title {
         font-size: 1.5rem;
     }
+    .hero-btn-group {
+        gap: 0.4rem;
+    }
+    .hero-btn-group .btn {
+        flex: 1 1 calc(50% - 0.2rem);
+        padding: 0.6rem 0.4rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.5px;
+    }
     .brand-logo-sub {
-        display: none;
+        display: none !important;
     }
     .product-grid {
         grid-template-columns: repeat(2, 1fr) !important;
-        gap: 0.5rem !important;
+        gap: 0.45rem !important;
+    }
+    .product-card {
+        border-radius: 6px !important;
+    }
+    .product-thumb-wrap {
+        aspect-ratio: 1 / 1.08 !important;
+    }
+    .product-badge {
+        top: 6px !important;
+        left: 6px !important;
+        font-size: 0.62rem !important;
+        padding: 2px 5px !important;
+        letter-spacing: 0.3px !important;
+        border-radius: 3px !important;
+    }
+    .product-actions-floating {
+        top: 6px !important;
+        right: 6px !important;
+        gap: 4px !important;
+    }
+    .floating-action-btn,
+    .wishlist-toggle-btn {
+        width: 30px !important;
+        height: 30px !important;
+    }
+    .floating-action-btn svg,
+    .wishlist-toggle-btn svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+    .product-info {
+        padding: 0.6rem 0.4rem 0.55rem !important;
+    }
+    .product-category-name {
+        font-size: 0.62rem !important;
+        letter-spacing: 0.8px !important;
+        margin-bottom: 0.2rem !important;
+    }
+    .product-title {
+        font-size: 0.85rem !important;
+        line-height: 1.3 !important;
+        min-height: 2.25rem !important;
+        max-height: 2.25rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+    .product-price-box {
+        gap: 0.3rem !important;
+        margin-bottom: 0.55rem !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        align-items: baseline !important;
+    }
+    .price-current {
+        font-size: 0.92rem !important;
+        font-weight: 700 !important;
+    }
+    .price-original {
+        font-size: 0.76rem !important;
+    }
+    .product-card-footer {
+        display: flex !important;
+        gap: 0.25rem !important;
+        width: 100% !important;
+    }
+    .btn-add-cart,
+    .btn-buy-now {
+        flex: 1 1 50% !important;
+        min-width: 0 !important;
+        padding: 0.48rem 0.15rem !important;
+        font-size: 0.66rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.2px !important;
+        white-space: nowrap !important;
+        text-align: center !important;
+        justify-content: center !important;
+        line-height: 1.2 !important;
+        border-radius: 3px !important;
+        min-height: 30px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
     .category-grid {
         grid-template-columns: repeat(2, 1fr) !important;
-        gap: 0.65rem !important;
+        gap: 0.5rem !important;
+    }
+    .category-overlay {
+        padding: 0.65rem 0.45rem !important;
+    }
+    .category-title {
+        font-size: 0.92rem !important;
+        margin-bottom: 0.15rem !important;
+    }
+    .category-explore {
+        font-size: 0.62rem !important;
+        letter-spacing: 1px !important;
+    }
+    .whatsapp-float-btn {
+        width: 44px !important;
+        height: 44px !important;
+        bottom: 16px !important;
+        right: 12px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4) !important;
+    }
+    .whatsapp-float-btn svg {
+        width: 22px !important;
+        height: 22px !important;
+    }
+    .whatsapp-float-btn span {
+        display: none !important;
+    }
+}
+
+/* Extra breakpoint for ultra-compact Android devices (320px - 365px like Galaxy S24, Galaxy A-series) */
+@media (max-width: 365px) {
+    .container {
+        padding: 0 0.45rem !important;
+    }
+    .product-grid {
+        gap: 0.35rem !important;
+    }
+    .product-info {
+        padding: 0.5rem 0.3rem 0.45rem !important;
+    }
+    .product-title {
+        font-size: 0.8rem !important;
+        line-height: 1.25 !important;
+        min-height: 2.1rem !important;
+        max-height: 2.1rem !important;
+    }
+    .price-current {
+        font-size: 0.88rem !important;
+    }
+    .price-original {
+        font-size: 0.72rem !important;
+    }
+    .btn-add-cart,
+    .btn-buy-now {
+        font-size: 0.62rem !important;
+        padding: 0.42rem 0.1rem !important;
+        letter-spacing: 0 !important;
+        min-height: 28px !important;
+    }
+    .product-badge {
+        font-size: 0.56rem !important;
+        padding: 2px 4px !important;
+    }
+    .floating-action-btn,
+    .wishlist-toggle-btn {
+        width: 26px !important;
+        height: 26px !important;
+    }
+    .floating-action-btn svg,
+    .wishlist-toggle-btn svg {
+        width: 12px !important;
+        height: 12px !important;
+    }
+    .brand-logo-img {
+        height: 32px !important;
+        width: 32px !important;
+    }
+    .brand-logo-text {
+        font-size: 1.05rem !important;
+    }
+    .header-actions {
+        gap: 0.15rem !important;
+    }
+    .action-icon-btn {
+        width: 30px !important;
+        height: 30px !important;
+        padding: 4px !important;
     }
 }

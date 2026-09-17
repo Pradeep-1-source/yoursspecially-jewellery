@@ -150,4 +150,13 @@ require_once __DIR__ . '/includes/header.php';
     <?php endif; ?>
 </div>
 
+<style>
+@media (max-width: 768px) {
+    div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem !important;
+    }
+}
+</style>
+
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

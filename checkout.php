@@ -273,9 +273,9 @@ require_once __DIR__ . '/includes/header.php';
     <form method="POST" action="<?= BASE_URL ?>checkout.php">
         <?= csrfField() ?>
 
-        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 3rem; align-items: start;">
+        <div class="checkout-layout" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 3rem; align-items: start;">
             <!-- Left Side: Shipping Information Form -->
-            <div style="background: #fff; padding: 2.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); box-shadow: var(--shadow-soft);">
+            <div class="checkout-form-card" style="background: #fff; padding: 2.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); box-shadow: var(--shadow-soft);">
                 <h3 style="font-size: 1.35rem; color: var(--primary); margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.8rem;">
                     1. Delivery Destination
                 </h3>
@@ -409,8 +409,15 @@ require_once __DIR__ . '/includes/header.php';
 
 <style>
 @media (max-width: 900px) {
+    .checkout-layout,
     div[style*="grid-template-columns: 1.5fr 1fr"] {
         grid-template-columns: 1fr !important;
+        gap: 1.75rem !important;
+    }
+}
+@media (max-width: 600px) {
+    .checkout-form-card {
+        padding: 1.25rem 0.85rem !important;
     }
 }
 </style>
