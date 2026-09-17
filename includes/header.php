@@ -60,6 +60,84 @@ $customer = currentCustomer();
             .header-actions { gap: 0.15rem; }
             .action-icon-btn { width: 30px; height: 30px; padding: 4px; }
         }
+
+        /* Critical Product Card Button Fix: Ensures Buy Now button never hides or clips on Android/Galaxy S24 */
+        @media (max-width: 768px) {
+            .product-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.5rem !important;
+            }
+            .product-card {
+                overflow: hidden !important;
+            }
+            .product-info {
+                padding: 0.65rem 0.35rem 0.5rem !important;
+            }
+            .product-card-footer {
+                display: flex !important;
+                gap: 0.25rem !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .btn-add-cart {
+                flex: 1.15 1 0 !important;
+                min-width: 0 !important;
+                max-width: 58% !important;
+                padding: 0.45rem 0.15rem !important;
+                font-size: 0.63rem !important;
+                font-weight: 600 !important;
+                letter-spacing: 0 !important;
+                white-space: nowrap !important;
+                text-align: center !important;
+                justify-content: center !important;
+                line-height: 1.2 !important;
+                border-radius: 3px !important;
+                min-height: 29px !important;
+                box-sizing: border-box !important;
+            }
+            .btn-buy-now {
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
+                max-width: 45% !important;
+                padding: 0.45rem 0.2rem !important;
+                font-size: 0.65rem !important;
+                font-weight: 600 !important;
+                letter-spacing: 0.2px !important;
+                white-space: nowrap !important;
+                text-align: center !important;
+                justify-content: center !important;
+                line-height: 1.2 !important;
+                border-radius: 3px !important;
+                min-height: 29px !important;
+                box-sizing: border-box !important;
+            }
+        }
+        @media (max-width: 375px) {
+            .container {
+                padding: 0 0.45rem !important;
+            }
+            .product-grid {
+                gap: 0.35rem !important;
+            }
+            .product-info {
+                padding: 0.5rem 0.25rem 0.45rem !important;
+            }
+            .product-card-footer {
+                gap: 0.2rem !important;
+            }
+            .btn-add-cart {
+                font-size: 0.59rem !important;
+                padding: 0.4rem 0.1rem !important;
+                letter-spacing: 0 !important;
+                min-height: 27px !important;
+            }
+            .btn-buy-now {
+                font-size: 0.61rem !important;
+                padding: 0.4rem 0.15rem !important;
+                letter-spacing: 0 !important;
+                min-height: 27px !important;
+            }
+        }
     </style>
 </head>
 <body>
