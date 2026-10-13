@@ -22,9 +22,12 @@ try {
     $db = getDBConnection();
     $cartId = getActiveCartId();
 
-    $stmt = $db->prepare("SELECT ci.id AS item_id, ci.quantity, ci.price, p.id AS product_id, p.name, p.slug, p.sku, p.main_image, p.stock 
+    $stmt = $db->prepare("SELECT ci.id AS item_id, ci.quantity, ci.price, ci.variant_id, ci.variant_info, p.id AS product_id, p.name, p.slug, p.sku, p.main_image, 
+                          COALESCE(pv.stock, p.stock) AS stock,
+                          COALESCE(pv.sku, p.sku) AS item_sku
                           FROM cart_items ci 
                           JOIN products p ON ci.product_id = p.id 
+                          LEFT JOIN product_variants pv ON ci.variant_id = pv.id
                           WHERE ci.cart_id = ? 
                           ORDER BY ci.id DESC");
     $stmt->execute([$cartId]);
@@ -100,11 +103,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Verify stock availability one more time before order confirmation
     foreach ($cartItems as $ci) {
-        $stkCheck = $db->prepare("SELECT stock, name FROM products WHERE id = ?");
-        $stkCheck->execute([$ci['product_id']]);
-        $currStk = $stkCheck->fetch();
-        if (!$currStk || $currStk['stock'] < $ci['quantity']) {
-            $errors[] = 'Sorry, ' . ($currStk['name'] ?? 'an item') . ' is currently out of stock or exceeds available quantity. Please adjust your shopping bag.';
+        if (!empty($ci['variant_id'])) {
+            $stkCheck = $db->prepare("SELECT stock, variant_type, variant_value FROM product_variants WHERE id = ?");
+            $stkCheck->execute([$ci['variant_id']]);
+            $currStk = $stkCheck->fetch();
+            if (!$currStk || $currStk['stock'] < $ci['quantity']) {
+                $errors[] = 'Sorry, ' . $ci['name'] . ' (' . ($ci['variant_info'] ?: 'selected variant') . ') exceeds available stock. Please reduce quantity or choose another option.';
+            }
+        } else {
+            $stkCheck = $db->prepare("SELECT stock, name FROM products WHERE id = ?");
+            $stkCheck->execute([$ci['product_id']]);
+            $currStk = $stkCheck->fetch();
+            if (!$currStk || $currStk['stock'] < $ci['quantity']) {
+                $errors[] = 'Sorry, ' . ($currStk['name'] ?? 'an item') . ' is currently out of stock or exceeds available quantity. Please adjust your shopping bag.';
+            }
         }
     }
 
@@ -152,13 +164,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newOrderId = (int)$db->lastInsertId();
 
             // Insert each item into order_items
-            $itemInsStmt = $db->prepare("INSERT INTO order_items (order_id, product_id, product_name, quantity, price, subtotal) VALUES (?, ?, ?, ?, ?, ?)");
+            $itemInsStmt = $db->prepare("INSERT INTO order_items (order_id, product_id, variant_id, variant_info, product_name, quantity, price, subtotal) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
             foreach ($cartItems as $ci) {
                 $lineSub = $ci['quantity'] * $ci['price'];
                 $itemInsStmt->execute([
                     $newOrderId,
                     $ci['product_id'],
+                    !empty($ci['variant_id']) ? $ci['variant_id'] : null,
+                    !empty($ci['variant_info']) ? $ci['variant_info'] : null,
                     $ci['name'],
                     $ci['quantity'],
                     $ci['price'],
@@ -167,6 +181,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // If COD, deduct inventory stock immediately
                 if ($paymentMethod === 'cod') {
+                    if (!empty($ci['variant_id'])) {
+                        $updVarStock = $db->prepare("UPDATE product_variants SET stock = GREATEST(0, stock - ?) WHERE id = ?");
+                        $updVarStock->execute([$ci['quantity'], $ci['variant_id']]);
+                    }
                     $updStock = $db->prepare("UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?");
                     $updStock->execute([$ci['quantity'], $ci['product_id']]);
                 }
@@ -365,6 +383,9 @@ require_once __DIR__ . '/includes/header.php';
                                 <img src="<?= BASE_URL . e($item['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>" alt="<?= e($item['name']) ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle);">
                                 <div style="flex-grow: 1;">
                                     <div style="font-size: 0.88rem; font-weight: 600; color: var(--primary);"><?= e($item['name']) ?></div>
+                                    <?php if (!empty($item['variant_info'])): ?>
+                                        <div style="font-size: 0.75rem; color: var(--secondary); font-weight: 600;"><?= e($item['variant_info']) ?></div>
+                                    <?php endif; ?>
                                     <div style="font-size: 0.78rem; color: var(--text-muted);"><?= $item['quantity'] ?> &times; <?= formatPrice($item['price']) ?></div>
                                 </div>
                                 <div style="font-weight: 600; font-size: 0.9rem;"><?= formatPrice($item['quantity'] * $item['price']) ?></div>

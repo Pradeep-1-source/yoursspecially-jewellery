@@ -130,6 +130,11 @@ require_once __DIR__ . '/includes/header.php';
                                 <?php endif; ?>
                                 <div>
                                     <strong style="color: var(--primary); font-family: var(--font-serif); font-size: 1.05rem; display: block;"><?= e($item['product_name']) ?></strong>
+                                    <?php if (!empty($item['variant_info'])): ?>
+                                        <span style="display: inline-block; background: var(--bg-blush); color: var(--primary); font-size: 0.78rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; margin-bottom: 2px;">
+                                            <?= e($item['variant_info']) ?>
+                                        </span><br>
+                                    <?php endif; ?>
                                     <span style="font-size: 0.8rem; color: var(--text-muted);">Qty: <?= (int)$item['quantity'] ?> &times; <?= formatPrice($item['price']) ?></span>
                                 </div>
                             </div>

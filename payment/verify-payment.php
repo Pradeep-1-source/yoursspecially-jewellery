@@ -43,11 +43,15 @@ try {
         $upd->execute([$orderId]);
 
         // Deduct inventory stock for ordered items
-        $itemsStmt = $db->prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?");
+        $itemsStmt = $db->prepare("SELECT product_id, variant_id, quantity FROM order_items WHERE order_id = ?");
         $itemsStmt->execute([$orderId]);
         $items = $itemsStmt->fetchAll();
 
         foreach ($items as $item) {
+            if (!empty($item['variant_id'])) {
+                $varStockStmt = $db->prepare("UPDATE product_variants SET stock = GREATEST(0, stock - ?) WHERE id = ?");
+                $varStockStmt->execute([$item['quantity'], $item['variant_id']]);
+            }
             if (!empty($item['product_id'])) {
                 $stockStmt = $db->prepare("UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?");
                 $stockStmt->execute([$item['quantity'], $item['product_id']]);

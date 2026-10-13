@@ -255,6 +255,23 @@ function initAjaxCart() {
         const qtyInput = document.querySelector('#productQuantity');
         const quantity = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
 
+        // Check if on product detail page with variant selector
+        const variantBox = document.querySelector('#productVariantSelector');
+        const variantInput = document.querySelector('#selectedVariantId');
+        const variantId = variantInput ? variantInput.value : '';
+
+        if (variantBox && !variantId) {
+            variantBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            variantBox.style.outline = '2px solid #C9654E';
+            variantBox.style.boxShadow = '0 0 15px rgba(201, 101, 78, 0.3)';
+            setTimeout(() => {
+                variantBox.style.outline = '';
+                variantBox.style.boxShadow = '';
+            }, 1500);
+            showToast('error', 'Please select an option (e.g. Size, Material) before adding to bag.');
+            return;
+        }
+
         const originalText = btn.innerHTML;
         btn.innerHTML = '<span>Adding...</span>';
         btn.disabled = true;
@@ -263,6 +280,9 @@ function initAjaxCart() {
         formData.append('action', 'add');
         formData.append('product_id', productId);
         formData.append('quantity', quantity);
+        if (variantId) {
+            formData.append('variant_id', variantId);
+        }
 
         fetch('api/cart.php', {
             method: 'POST',

@@ -20,9 +20,12 @@ try {
     $db = getDBConnection();
     $cartId = getActiveCartId();
 
-    $stmt = $db->prepare("SELECT ci.id AS item_id, ci.quantity, ci.price, p.id AS product_id, p.name, p.slug, p.sku, p.main_image, p.stock 
+    $stmt = $db->prepare("SELECT ci.id AS item_id, ci.quantity, ci.price, ci.variant_id, ci.variant_info, p.id AS product_id, p.name, p.slug, p.sku, p.main_image, 
+                          COALESCE(pv.stock, p.stock) AS stock,
+                          COALESCE(pv.sku, p.sku) AS item_sku
                           FROM cart_items ci 
                           JOIN products p ON ci.product_id = p.id 
+                          LEFT JOIN product_variants pv ON ci.variant_id = pv.id
                           WHERE ci.cart_id = ? 
                           ORDER BY ci.id DESC");
     $stmt->execute([$cartId]);
@@ -123,7 +126,12 @@ require_once __DIR__ . '/includes/header.php';
                                             <a href="<?= BASE_URL ?>product.php?slug=<?= urlencode($item['slug']) ?>" style="font-weight: 600; color: var(--primary); font-family: var(--font-serif); font-size: 1.05rem; display: block;">
                                                 <?= e($item['name']) ?>
                                             </a>
-                                            <span style="font-size: 0.78rem; color: var(--text-muted);">SKU: <?= e($item['sku']) ?></span>
+                                            <?php if (!empty($item['variant_info'])): ?>
+                                                <div style="display: inline-block; background: var(--bg-blush); color: var(--primary); font-size: 0.78rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin: 3px 0; border: 1px solid rgba(139, 44, 76, 0.15);">
+                                                    <?= e($item['variant_info']) ?>
+                                                </div>
+                                            <?php endif; ?>
+                                            <div style="font-size: 0.78rem; color: var(--text-muted);">SKU: <?= e($item['item_sku'] ?? $item['sku']) ?></div>
                                             <?php if ($isOverStock): ?>
                                                 <div style="color: #DC2626; font-size: 0.78rem; font-weight: 600; margin-top: 3px;">
                                                     Selected quantity exceeds available stock. Please reduce quantity to proceed.

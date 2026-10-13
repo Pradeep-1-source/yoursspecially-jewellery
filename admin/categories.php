@@ -33,14 +33,33 @@ if (isset($_GET['delete_id'])) {
     }
 }
 
+// Handle Batch Order Update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_orders'])) {
+    if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+        setFlash('error', 'Security token invalid. Please refresh the page.');
+    } else {
+        $displayOrders = $_POST['display_orders'] ?? [];
+        if (is_array($displayOrders) && !empty($displayOrders)) {
+            $updStmt = $db->prepare("UPDATE categories SET display_order = ? WHERE id = ?");
+            foreach ($displayOrders as $cId => $ord) {
+                $updStmt->execute([(int)$ord, (int)$cId]);
+            }
+            setFlash('success', 'Category display order updated successfully!');
+            header("Location: " . BASE_URL . "admin/categories.php");
+            exit;
+        }
+    }
+}
+
 // Handle Form Submission (Add or Update)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['update_orders'])) {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Security token invalid. Please refresh the page.';
     } else {
         $categoryId = (int)($_POST['category_id'] ?? 0);
         $name = trim($_POST['name'] ?? '');
         $description = trim($_POST['description'] ?? '');
+        $displayOrder = (int)($_POST['display_order'] ?? 0);
         $status = isset($_POST['status']) ? 1 : 0;
 
         if (empty($name)) {
@@ -64,13 +83,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 if ($categoryId > 0) {
                     // Update
-                    $upd = $db->prepare("UPDATE categories SET name = ?, slug = ?, description = ?, image = ?, status = ? WHERE id = ?");
-                    $upd->execute([$name, $slug, $description, $imagePath, $status, $categoryId]);
+                    $upd = $db->prepare("UPDATE categories SET name = ?, slug = ?, description = ?, image = ?, status = ?, display_order = ? WHERE id = ?");
+                    $upd->execute([$name, $slug, $description, $imagePath, $status, $displayOrder, $categoryId]);
                     setFlash('success', "Category '{$name}' updated successfully.");
                 } else {
                     // Insert
-                    $ins = $db->prepare("INSERT INTO categories (name, slug, description, image, status, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
-                    $ins->execute([$name, $slug, $description, $imagePath, $status]);
+                    $ins = $db->prepare("INSERT INTO categories (name, slug, description, image, status, display_order, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+                    $ins->execute([$name, $slug, $description, $imagePath, $status, $displayOrder]);
                     setFlash('success', "Category '{$name}' created successfully.");
                 }
                 header("Location: " . BASE_URL . "admin/categories.php");
@@ -83,8 +102,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch all categories with product counts
-$categories = $db->query("SELECT c.*, (SELECT COUNT(*) FROM products WHERE category_id = c.id) as product_count FROM categories c ORDER BY c.id ASC")->fetchAll();
+// Fetch all categories with product counts ordered by display_order
+$categories = $db->query("SELECT c.*, (SELECT COUNT(*) FROM products WHERE category_id = c.id) as product_count FROM categories c ORDER BY c.display_order ASC, c.id ASC")->fetchAll();
 ?>
 
 <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 2rem; align-items: start;">
@@ -120,6 +139,12 @@ $categories = $db->query("SELECT c.*, (SELECT COUNT(*) FROM products WHERE categ
                 </div>
 
                 <div class="form-group">
+                    <label class="form-label" for="catOrder">Display Order (Sorting Priority)</label>
+                    <input type="number" id="catOrder" name="display_order" class="form-control" placeholder="e.g. 1 (lower numbers appear first)" value="<?= (int)($_POST['display_order'] ?? ($editCategory['display_order'] ?? 0)) ?>" min="0">
+                    <small style="color: var(--admin-muted); font-size: 0.78rem;">Categories with smaller numbers appear first on the homepage and navigation.</small>
+                </div>
+
+                <div class="form-group">
                     <label class="form-label" for="catImg">Category Cover Image</label>
                     <input type="file" id="catImg" name="image" class="form-control image-upload-input" data-preview="catPreview" accept="image/*">
                     <div class="image-preview-box" id="catPreview">
@@ -147,46 +172,59 @@ $categories = $db->query("SELECT c.*, (SELECT COUNT(*) FROM products WHERE categ
 
     <!-- Category Listing Table -->
     <div class="admin-card">
-        <div class="admin-card-header">
-            <h3>Categories (<?= count($categories) ?>)</h3>
-        </div>
-        <div class="admin-table-responsive">
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>Image</th>
-                        <th>Name</th>
-                        <th>Slug</th>
-                        <th>Products</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($categories as $cat): ?>
+        <form method="POST" action="<?= BASE_URL ?>admin/categories.php">
+            <?= csrfField() ?>
+            <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="margin: 0;">Categories (<?= count($categories) ?>)</h3>
+                    <small style="color: var(--admin-muted); font-size: 0.78rem;">Sorted by display order. Edit numbers below and save.</small>
+                </div>
+                <button type="submit" name="update_orders" value="1" class="btn-admin btn-admin-primary btn-admin-sm">
+                    💾 Save Display Order
+                </button>
+            </div>
+            <div class="admin-table-responsive">
+                <table class="admin-table">
+                    <thead>
                         <tr>
-                            <td style="width: 50px;">
-                                <img src="<?= BASE_URL . e($cat['image'] ?: 'assets/images/cat-necklaces.jpg') ?>" alt="<?= e($cat['name']) ?>" style="width: 44px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border);">
-                            </td>
-                            <td><strong style="color: var(--admin-primary);"><?= e($cat['name']) ?></strong></td>
-                            <td style="font-size: 0.8rem; color: var(--admin-muted);"><code><?= e($cat['slug']) ?></code></td>
-                            <td><span style="font-weight: 600;"><?= $cat['product_count'] ?></span></td>
-                            <td>
-                                <span class="badge-status <?= $cat['status'] == 1 ? 'delivered' : 'cancelled' ?>">
-                                    <?= $cat['status'] == 1 ? 'Active' : 'Disabled' ?>
-                                </span>
-                            </td>
-                            <td>
-                                <div style="display: flex; gap: 6px;">
-                                    <a href="<?= BASE_URL ?>admin/categories.php?edit_id=<?= $cat['id'] ?>" class="btn-admin btn-admin-outline btn-admin-sm">Edit</a>
-                                    <a href="<?= BASE_URL ?>admin/categories.php?delete_id=<?= $cat['id'] ?>" class="btn-admin btn-admin-danger btn-admin-sm confirm-delete" data-confirm="Delete category '<?= e($cat['name']) ?>'?">Del</a>
-                                </div>
-                            </td>
+                            <th style="width: 70px;">Order</th>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th>Slug</th>
+                            <th>Products</th>
+                            <th>Status</th>
+                            <th>Action</th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($categories as $cat): ?>
+                            <tr>
+                                <td>
+                                    <input type="number" name="display_orders[<?= $cat['id'] ?>]" value="<?= (int)$cat['display_order'] ?>" style="width: 58px; padding: 4px 6px; border: 1px solid var(--admin-border); border-radius: 4px; text-align: center; font-weight: 600;" min="0">
+                                </td>
+                                <td style="width: 50px;">
+                                    <img src="<?= BASE_URL . e($cat['image'] ?: 'assets/images/cat-necklaces.jpg') ?>" alt="<?= e($cat['name']) ?>" style="width: 44px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border);">
+                                </td>
+                                <td><strong style="color: var(--admin-primary);"><?= e($cat['name']) ?></strong></td>
+                                <td style="font-size: 0.8rem; color: var(--admin-muted);"><code><?= e($cat['slug']) ?></code></td>
+                                <td><span style="font-weight: 600;"><?= $cat['product_count'] ?></span></td>
+                                <td>
+                                    <span class="badge-status <?= $cat['status'] == 1 ? 'delivered' : 'cancelled' ?>">
+                                        <?= $cat['status'] == 1 ? 'Active' : 'Disabled' ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 6px;">
+                                        <a href="<?= BASE_URL ?>admin/categories.php?edit_id=<?= $cat['id'] ?>" class="btn-admin btn-admin-outline btn-admin-sm">Edit</a>
+                                        <a href="<?= BASE_URL ?>admin/categories.php?delete_id=<?= $cat['id'] ?>" class="btn-admin btn-admin-danger btn-admin-sm confirm-delete" data-confirm="Delete category '<?= e($cat['name']) ?>'?">Del</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </form>
     </div>
 </div>
 

@@ -74,6 +74,9 @@ require_once __DIR__ . '/includes/header.php';
                 <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.8rem; border-bottom: 1px solid var(--bg-cream);">
                     <div>
                         <strong style="color: var(--primary); font-size: 0.95rem;"><?= e($item['product_name']) ?></strong>
+                        <?php if (!empty($item['variant_info'])): ?>
+                            <div style="font-size: 0.8rem; color: var(--secondary); font-weight: 600; margin: 2px 0;"><?= e($item['variant_info']) ?></div>
+                        <?php endif; ?>
                         <div style="font-size: 0.8rem; color: var(--text-muted);">Quantity: <?= $item['quantity'] ?> &times; <?= formatPrice($item['price']) ?></div>
                     </div>
                     <div style="font-weight: 600; color: var(--primary); font-size: 0.95rem;">

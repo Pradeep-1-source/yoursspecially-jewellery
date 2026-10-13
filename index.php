@@ -31,20 +31,20 @@ try {
         ];
     }
 
-    // Fetch active categories
-    $catStmt = $db->query("SELECT * FROM categories WHERE status = 1 ORDER BY id ASC LIMIT 8");
+    // 1. Fetch all active categories dynamically in saved display order (no hardcoded limit)
+    $catStmt = $db->query("SELECT * FROM categories WHERE status = 1 ORDER BY display_order ASC, id ASC");
     $categories = $catStmt->fetchAll();
 
-    // Fetch featured products
-    $featuredStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.featured = 1 AND p.status = 1 ORDER BY p.id DESC LIMIT 8");
+    // 2. Fetch featured products (active & explicitly marked as featured by admin, ordered by display_order)
+    $featuredStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.featured = 1 AND p.status = 1 ORDER BY p.display_order ASC, p.id DESC");
     $featuredProducts = $featuredStmt->fetchAll();
 
-    // Fetch new arrivals
-    $newArrivalsStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 1 ORDER BY p.id DESC LIMIT 4");
+    // 3. Fetch new arrivals (active & explicitly marked as new arrival by admin, ordered by display_order)
+    $newArrivalsStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_new_arrival = 1 AND p.status = 1 ORDER BY p.display_order ASC, p.id DESC");
     $newArrivals = $newArrivalsStmt->fetchAll();
 
-    // Fetch best sellers (or top items)
-    $bestSellersStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 1 ORDER BY p.price DESC LIMIT 4");
+    // 4. Fetch best sellers / curated pieces (fallback active items)
+    $bestSellersStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 1 ORDER BY p.display_order ASC, p.id DESC LIMIT 4");
     $bestSellers = $bestSellersStmt->fetchAll();
 
 } catch (Exception $e) {
@@ -108,23 +108,34 @@ require_once __DIR__ . '/includes/header.php';
             <p class="section-subtitle">Discover handcrafted artistry sculpted with rose gold romance, sparkling gems, and heritage passion.</p>
         </div>
 
-        <div class="category-grid">
-            <?php foreach ($categories as $cat): ?>
-                <a href="<?= BASE_URL ?>products.php?category=<?= urlencode($cat['slug']) ?>" class="category-card">
-                    <div class="category-img-box">
-                        <img src="<?= BASE_URL . e($cat['image'] ?: 'assets/images/cat-necklaces.jpg') ?>" alt="<?= e($cat['name']) ?>" loading="lazy">
-                        <div class="category-overlay">
-                            <h3 class="category-title"><?= e($cat['name']) ?></h3>
-                            <span class="category-explore">Explore Collection &rarr;</span>
+        <?php if (!empty($categories)): ?>
+            <div class="category-grid">
+                <?php foreach ($categories as $cat): ?>
+                    <a href="<?= BASE_URL ?>products.php?category=<?= urlencode($cat['slug']) ?>" class="category-card">
+                        <div class="category-img-box">
+                            <img src="<?= BASE_URL . e($cat['image'] ?: 'assets/images/cat-necklaces.jpg') ?>" alt="<?= e($cat['name']) ?>" loading="lazy">
+                            <div class="category-overlay">
+                                <h3 class="category-title"><?= e($cat['name']) ?></h3>
+                                <span class="category-explore">Explore Collection &rarr;</span>
+                            </div>
                         </div>
-                    </div>
-                </a>
-            <?php endforeach; ?>
-        </div>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+
+            <div class="text-center" style="margin-top: 2.5rem;">
+                <a href="<?= BASE_URL ?>products.php" class="btn btn-outline">Explore All Collections &rarr;</a>
+            </div>
+        <?php else: ?>
+            <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                <p>New curated collections are being forged in our atelier.</p>
+            </div>
+        <?php endif; ?>
     </div>
 </section>
 
 <!-- 3. FEATURED JEWELLERY PIECES -->
+<?php if (!empty($featuredProducts)): ?>
 <section class="section-padding" style="background: var(--bg-blush-light);">
     <div class="container">
         <div class="text-center">
@@ -207,6 +218,7 @@ require_once __DIR__ . '/includes/header.php';
         </div>
     </div>
 </section>
+<?php endif; ?>
 
 <!-- 4. EDITORIAL PROMOTIONAL SHOWCASE -->
 <section class="section-padding promo-editorial-section">
@@ -230,6 +242,7 @@ require_once __DIR__ . '/includes/header.php';
 </section>
 
 <!-- 5. NEW ARRIVALS -->
+<?php if (!empty($newArrivals)): ?>
 <section class="section-padding">
     <div class="container">
         <div class="text-center">
@@ -291,6 +304,7 @@ require_once __DIR__ . '/includes/header.php';
         </div>
     </div>
 </section>
+<?php endif; ?>
 
 <!-- 6. WHY CHOOSE US / TRUST BADGES -->
 <section class="section-padding" style="background: var(--bg-cream); border-top: 1px solid var(--border-subtle);">

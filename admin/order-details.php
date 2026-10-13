@@ -40,10 +40,11 @@ if (!$order) {
     exit;
 }
 
-// Fetch order items with product SKU/image
-$itemStmt = $db->prepare("SELECT oi.*, p.sku, p.main_image, p.slug 
+// Fetch order items with product SKU/image & variant info
+$itemStmt = $db->prepare("SELECT oi.*, COALESCE(pv.sku, p.sku) AS sku, p.main_image, p.slug 
                          FROM order_items oi 
                          LEFT JOIN products p ON oi.product_id = p.id 
+                         LEFT JOIN product_variants pv ON oi.variant_id = pv.id
                          WHERE oi.order_id = ?");
 $itemStmt->execute([$orderId]);
 $items = $itemStmt->fetchAll();
@@ -90,7 +91,14 @@ $waLink = "https://wa.me/91" . $customerWaNumber . "?text=" . $waMessage;
                             <tr>
                                 <td style="display: flex; align-items: center; gap: 10px;">
                                     <img src="<?= BASE_URL . e($it['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>" alt="<?= e($it['product_name']) ?>" style="width: 44px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border);">
-                                    <strong style="color: var(--admin-primary); font-size: 0.92rem;"><?= e($it['product_name']) ?></strong>
+                                    <div>
+                                        <strong style="color: var(--admin-primary); font-size: 0.92rem; display: block;"><?= e($it['product_name']) ?></strong>
+                                        <?php if (!empty($it['variant_info'])): ?>
+                                            <span style="display: inline-block; background: #FDF2F4; color: var(--admin-primary); font-size: 0.78rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; border: 1px solid #F8D7DA; margin-top: 3px;">
+                                                <?= e($it['variant_info']) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                                 <td><code><?= e($it['sku'] ?? 'N/A') ?></code></td>
                                 <td><?= formatPrice($it['price']) ?></td>

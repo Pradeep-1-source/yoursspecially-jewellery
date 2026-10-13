@@ -17,13 +17,14 @@ try {
         case 'add':
             $productId = (int)($_POST['product_id'] ?? 0);
             $quantity = max(1, (int)($_POST['quantity'] ?? 1));
+            $variantId = isset($_POST['variant_id']) && (int)$_POST['variant_id'] > 0 ? (int)$_POST['variant_id'] : null;
 
             if ($productId <= 0) {
                 echo json_encode(['success' => false, 'message' => 'Invalid product selection.']);
                 exit;
             }
 
-            // Verify product existence and stock
+            // Verify product existence and status
             $pStmt = $db->prepare("SELECT id, name, price, sale_price, stock, status FROM products WHERE id = ? LIMIT 1");
             $pStmt->execute([$productId]);
             $product = $pStmt->fetch();
@@ -33,40 +34,96 @@ try {
                 exit;
             }
 
-            if ($product['stock'] < 1) {
-                echo json_encode(['success' => false, 'message' => 'This jewellery creation is currently sold out.']);
-                exit;
+            $unitPrice = (!empty($product['sale_price']) && $product['sale_price'] < $product['price']) ? (float)$product['sale_price'] : (float)$product['price'];
+
+            // Check if product has active variants configured
+            $vStmt = $db->prepare("SELECT id, variant_type, variant_value, sku, price, stock FROM product_variants WHERE product_id = ? AND status = 1");
+            $vStmt->execute([$productId]);
+            $availableVariants = $vStmt->fetchAll();
+
+            $variantInfo = null;
+            $availableStock = (int)$product['stock'];
+
+            if (!empty($availableVariants)) {
+                // Product requires a variant selection
+                if (!$variantId) {
+                    echo json_encode([
+                        'success' => false, 
+                        'message' => 'Please select an option (e.g. Size, Colour, or Material) before adding to bag.',
+                        'require_variant' => true
+                    ]);
+                    exit;
+                }
+
+                $selectedVariant = null;
+                foreach ($availableVariants as $av) {
+                    if ((int)$av['id'] === $variantId) {
+                        $selectedVariant = $av;
+                        break;
+                    }
+                }
+
+                if (!$selectedVariant) {
+                    echo json_encode(['success' => false, 'message' => 'Invalid variant option selected.']);
+                    exit;
+                }
+
+                if ($selectedVariant['stock'] < 1) {
+                    echo json_encode(['success' => false, 'message' => 'Selected option (' . $selectedVariant['variant_value'] . ') is currently out of stock.']);
+                    exit;
+                }
+
+                // Override unit price if variant has custom price
+                if (!empty($selectedVariant['price']) && (float)$selectedVariant['price'] > 0) {
+                    $unitPrice = (float)$selectedVariant['price'];
+                }
+
+                $variantInfo = $selectedVariant['variant_type'] . ': ' . $selectedVariant['variant_value'];
+                $availableStock = (int)$selectedVariant['stock'];
+            } else {
+                // Product without variants
+                $variantId = null;
+                $variantInfo = null;
+
+                if ($availableStock < 1) {
+                    echo json_encode(['success' => false, 'message' => 'This jewellery creation is currently sold out.']);
+                    exit;
+                }
             }
 
-            $unitPrice = (!empty($product['sale_price']) && $product['sale_price'] < $product['price']) ? $product['sale_price'] : $product['price'];
-
-            // Check if product already in cart
-            $itemStmt = $db->prepare("SELECT id, quantity FROM cart_items WHERE cart_id = ? AND product_id = ? LIMIT 1");
-            $itemStmt->execute([$cartId, $productId]);
+            // Check if product/variant already in cart
+            if ($variantId) {
+                $itemStmt = $db->prepare("SELECT id, quantity FROM cart_items WHERE cart_id = ? AND product_id = ? AND variant_id = ? LIMIT 1");
+                $itemStmt->execute([$cartId, $productId, $variantId]);
+            } else {
+                $itemStmt = $db->prepare("SELECT id, quantity FROM cart_items WHERE cart_id = ? AND product_id = ? AND (variant_id IS NULL OR variant_id = 0) LIMIT 1");
+                $itemStmt->execute([$cartId, $productId]);
+            }
             $existingItem = $itemStmt->fetch();
 
             $newTotalQty = $quantity + ($existingItem ? (int)$existingItem['quantity'] : 0);
 
-            if ($newTotalQty > $product['stock']) {
+            if ($newTotalQty > $availableStock) {
                 echo json_encode([
                     'success' => false, 
-                    'message' => 'Maximum available quantity reached for this piece.',
+                    'message' => 'Maximum available quantity (' . $availableStock . ') reached for this piece.',
                     'max_reached' => true
                 ]);
                 exit;
             }
 
             if ($existingItem) {
-                $upd = $db->prepare("UPDATE cart_items SET quantity = ?, price = ? WHERE id = ?");
-                $upd->execute([$newTotalQty, $unitPrice, $existingItem['id']]);
+                $upd = $db->prepare("UPDATE cart_items SET quantity = ?, price = ?, variant_info = ? WHERE id = ?");
+                $upd->execute([$newTotalQty, $unitPrice, $variantInfo, $existingItem['id']]);
             } else {
-                $ins = $db->prepare("INSERT INTO cart_items (cart_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
-                $ins->execute([$cartId, $productId, $quantity, $unitPrice]);
+                $ins = $db->prepare("INSERT INTO cart_items (cart_id, product_id, variant_id, variant_info, quantity, price) VALUES (?, ?, ?, ?, ?, ?)");
+                $ins->execute([$cartId, $productId, $variantId, $variantInfo, $quantity, $unitPrice]);
             }
 
+            $successMsg = 'Added ' . $product['name'] . ($variantInfo ? " ({$variantInfo})" : '') . ' to your shopping bag.';
             echo json_encode([
                 'success' => true,
-                'message' => 'Added ' . $product['name'] . ' to your shopping bag.',
+                'message' => $successMsg,
                 'cart_count' => getCartItemCount()
             ]);
             exit;
@@ -91,8 +148,12 @@ try {
                 exit;
             }
 
-            // Verify stock limit
-            $chk = $db->prepare("SELECT ci.id, ci.product_id, p.stock, p.name FROM cart_items ci JOIN products p ON ci.product_id = p.id WHERE ci.id = ? AND ci.cart_id = ?");
+            // Verify stock limit against variant or base product
+            $chk = $db->prepare("SELECT ci.id, ci.product_id, ci.variant_id, p.stock AS prod_stock, p.name, pv.stock AS variant_stock 
+                                 FROM cart_items ci 
+                                 JOIN products p ON ci.product_id = p.id 
+                                 LEFT JOIN product_variants pv ON ci.variant_id = pv.id 
+                                 WHERE ci.id = ? AND ci.cart_id = ?");
             $chk->execute([$itemId, $cartId]);
             $item = $chk->fetch();
 
@@ -101,10 +162,12 @@ try {
                 exit;
             }
 
-            if ($quantity > $item['stock']) {
+            $effectiveStock = ($item['variant_id'] && $item['variant_stock'] !== null) ? (int)$item['variant_stock'] : (int)$item['prod_stock'];
+
+            if ($quantity > $effectiveStock) {
                 echo json_encode([
-                    'success' => false,
-                    'message' => 'Maximum available quantity reached for this piece.',
+                    'success' => false, 
+                    'message' => 'Maximum available quantity (' . $effectiveStock . ') reached for this piece.',
                     'max_reached' => true
                 ]);
                 exit;

@@ -52,10 +52,12 @@ CREATE TABLE IF NOT EXISTS `categories` (
   `description` TEXT DEFAULT NULL,
   `image` VARCHAR(255) DEFAULT NULL,
   `status` TINYINT(1) NOT NULL DEFAULT 1,
+  `display_order` INT NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   INDEX `idx_cat_slug` (`slug`),
-  INDEX `idx_cat_status` (`status`)
+  INDEX `idx_cat_status` (`status`),
+  INDEX `idx_cat_order` (`status`, `display_order`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -74,6 +76,8 @@ CREATE TABLE IF NOT EXISTS `products` (
   `main_image` VARCHAR(255) DEFAULT NULL,
   `status` TINYINT(1) NOT NULL DEFAULT 1,
   `featured` TINYINT(1) NOT NULL DEFAULT 0,
+  `is_new_arrival` TINYINT(1) NOT NULL DEFAULT 0,
+  `display_order` INT NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -82,7 +86,28 @@ CREATE TABLE IF NOT EXISTS `products` (
   INDEX `idx_prod_sku` (`sku`),
   INDEX `idx_prod_status` (`status`),
   INDEX `idx_prod_featured` (`featured`),
+  INDEX `idx_prod_new` (`status`, `is_new_arrival`, `display_order`),
+  INDEX `idx_prod_order` (`status`, `display_order`, `id`),
   CONSTRAINT `fk_products_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- 4b. Product Variants Table
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `product_variants` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `product_id` INT UNSIGNED NOT NULL,
+  `variant_type` VARCHAR(50) NOT NULL DEFAULT 'Option',
+  `variant_value` VARCHAR(100) NOT NULL,
+  `sku` VARCHAR(60) DEFAULT NULL,
+  `price` DECIMAL(10,2) DEFAULT NULL,
+  `stock` INT NOT NULL DEFAULT 10,
+  `status` TINYINT(1) NOT NULL DEFAULT 1,
+  `display_order` INT NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_pv_prod` (`product_id`, `status`, `display_order`),
+  CONSTRAINT `fk_product_variants_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -120,11 +145,14 @@ CREATE TABLE IF NOT EXISTS `cart_items` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `cart_id` INT UNSIGNED NOT NULL,
   `product_id` INT UNSIGNED NOT NULL,
+  `variant_id` INT UNSIGNED DEFAULT NULL,
+  `variant_info` VARCHAR(255) DEFAULT NULL,
   `quantity` INT NOT NULL DEFAULT 1,
   `price` DECIMAL(10,2) NOT NULL,
   PRIMARY KEY (`id`),
   INDEX `idx_ci_cart` (`cart_id`),
   INDEX `idx_ci_prod` (`product_id`),
+  INDEX `idx_ci_variant` (`variant_id`),
   CONSTRAINT `fk_cart_items_cart` FOREIGN KEY (`cart_id`) REFERENCES `carts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_cart_items_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -184,6 +212,8 @@ CREATE TABLE IF NOT EXISTS `order_items` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `order_id` INT UNSIGNED NOT NULL,
   `product_id` INT UNSIGNED DEFAULT NULL,
+  `variant_id` INT UNSIGNED DEFAULT NULL,
+  `variant_info` VARCHAR(255) DEFAULT NULL,
   `product_name` VARCHAR(200) NOT NULL,
   `quantity` INT NOT NULL DEFAULT 1,
   `price` DECIMAL(10,2) NOT NULL,
@@ -191,6 +221,7 @@ CREATE TABLE IF NOT EXISTS `order_items` (
   PRIMARY KEY (`id`),
   INDEX `idx_oi_order` (`order_id`),
   INDEX `idx_oi_prod` (`product_id`),
+  INDEX `idx_oi_variant` (`variant_id`),
   CONSTRAINT `fk_order_items_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_order_items_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

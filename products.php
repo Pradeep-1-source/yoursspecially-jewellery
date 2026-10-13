@@ -8,9 +8,11 @@ require_once __DIR__ . '/includes/auth.php';
 
 $search = trim($_GET['search'] ?? '');
 $categorySlug = trim($_GET['category'] ?? '');
-$sort = trim($_GET['sort'] ?? 'newest');
-$minPrice = isset($_GET['min_price']) && is_numeric($_GET['min_price']) ? (float)$_GET['min_price'] : 0;
-$maxPrice = isset($_GET['max_price']) && is_numeric($_GET['max_price']) ? (float)$_GET['max_price'] : 0;
+$sort = trim($_GET['sort'] ?? 'recommended');
+$minPrice = isset($_GET['min_price']) && is_numeric($_GET['min_price']) && $_GET['min_price'] > 0 ? (float)$_GET['min_price'] : null;
+$maxPrice = isset($_GET['max_price']) && is_numeric($_GET['max_price']) && $_GET['max_price'] > 0 ? (float)$_GET['max_price'] : null;
+$featured = (isset($_GET['featured']) && $_GET['featured'] === '1') ? 1 : 0;
+$newArrival = ((isset($_GET['new_arrival']) && $_GET['new_arrival'] === '1') || (isset($_GET['new_arrivals']) && $_GET['new_arrivals'] === '1')) ? 1 : 0;
 
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 12;
@@ -20,11 +22,28 @@ $currentCategory = null;
 $whereConditions = ["p.status = 1"];
 $params = [];
 
+// Helper function to build query strings preserving other active filters
+function getFilterUrl($overrides = []) {
+    $params = $_GET;
+    unset($params['page']); // Reset page when modifying filters
+    foreach ($overrides as $k => $v) {
+        if ($v === null || $v === '') {
+            unset($params[$k]);
+        } else {
+            $params[$k] = $v;
+        }
+    }
+    return 'products.php' . (!empty($params) ? '?' . http_build_query($params) : '');
+}
+
 try {
     $db = getDBConnection();
 
-    // Fetch all active categories for filter sidebar
-    $catStmt = $db->query("SELECT id, name, slug, (SELECT COUNT(*) FROM products WHERE category_id = categories.id AND status = 1) as prod_count FROM categories WHERE status = 1 ORDER BY name ASC");
+    // Fetch all active categories sorted by admin display_order
+    $catStmt = $db->query("SELECT id, name, slug, (SELECT COUNT(*) FROM products WHERE category_id = categories.id AND status = 1) as prod_count 
+                           FROM categories 
+                           WHERE status = 1 
+                           ORDER BY display_order ASC, name ASC");
     $allCategories = $catStmt->fetchAll();
 
     // Filter by Category
@@ -49,40 +68,57 @@ try {
     }
 
     // Filter by Price Range
-    if ($minPrice > 0) {
+    if ($minPrice !== null) {
         $whereConditions[] = "COALESCE(p.sale_price, p.price) >= ?";
         $params[] = $minPrice;
     }
-    if ($maxPrice > 0) {
+    if ($maxPrice !== null) {
         $whereConditions[] = "COALESCE(p.sale_price, p.price) <= ?";
         $params[] = $maxPrice;
     }
 
+    // Filter by Featured Status
+    if ($featured === 1) {
+        $whereConditions[] = "p.featured = 1";
+    }
+
+    // Filter by New Arrival Status
+    if ($newArrival === 1) {
+        $whereConditions[] = "p.is_new_arrival = 1";
+    }
+
     // Sorting Logic
-    $orderBy = "p.id DESC"; // Default newest
     switch ($sort) {
         case 'price_low':
-            $orderBy = "COALESCE(p.sale_price, p.price) ASC";
+            $orderBy = "COALESCE(p.sale_price, p.price) ASC, p.id DESC";
             break;
         case 'price_high':
-            $orderBy = "COALESCE(p.sale_price, p.price) DESC";
+            $orderBy = "COALESCE(p.sale_price, p.price) DESC, p.id DESC";
+            break;
+        case 'newest':
+            $orderBy = "p.id DESC";
             break;
         case 'featured':
-            $orderBy = "p.featured DESC, p.id DESC";
+            $orderBy = "p.featured DESC, p.display_order ASC, p.id DESC";
             break;
         case 'name_asc':
             $orderBy = "p.name ASC";
+            break;
+        case 'recommended':
+        default:
+            $orderBy = "p.display_order ASC, p.id DESC";
+            $sort = 'recommended';
             break;
     }
 
     $whereSql = implode(" AND ", $whereConditions);
 
-    // Count total matching products for pagination
+    // Count total matching products for pagination and badges
     $countSql = "SELECT COUNT(*) FROM products p WHERE " . $whereSql;
     $countStmt = $db->prepare($countSql);
     $countStmt->execute($params);
     $totalProducts = (int)$countStmt->fetchColumn();
-    $totalPages = ceil($totalProducts / $perPage);
+    $totalPages = max(1, ceil($totalProducts / $perPage));
 
     // Fetch paginated products
     $sql = "SELECT p.*, c.name AS category_name, c.slug AS category_slug 
@@ -103,6 +139,8 @@ try {
     $totalProducts = 0;
     $totalPages = 1;
 }
+
+$hasActiveFilters = !empty($categorySlug) || !empty($search) || ($minPrice !== null) || ($maxPrice !== null) || ($featured === 1) || ($newArrival === 1);
 
 $pageTitle = $currentCategory ? e($currentCategory['name']) . ' | YoursSpeciallyJewellery' : 'Luxury Jewellery Collection | YoursSpecially';
 $metaDescription = $currentCategory ? 'Explore our handcrafted ' . e($currentCategory['name']) . ' collection made with exquisite artistry and fine materials.' : 'Browse our complete catalogue of fine rings, necklaces, earrings, and bridal jewellery.';
@@ -128,23 +166,92 @@ require_once __DIR__ . '/includes/header.php';
         </p>
     </div>
 
+    <!-- Active Filter Badges Bar (if any filter is applied) -->
+    <?php if ($hasActiveFilters): ?>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 1.5rem; padding: 0.75rem 1.25rem; background: #fff; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">Active Filters:</span>
+
+            <?php if (!empty($categorySlug)): ?>
+                <a href="<?= BASE_URL . e(getFilterUrl(['category' => null])) ?>" class="filter-active-pill" title="Remove category filter">
+                    Category: <?= e($currentCategory['name'] ?? $categorySlug) ?> <span class="pill-close">&times;</span>
+                </a>
+            <?php endif; ?>
+
+            <?php if ($featured === 1): ?>
+                <a href="<?= BASE_URL . e(getFilterUrl(['featured' => null])) ?>" class="filter-active-pill" title="Remove featured filter">
+                    Featured Creations <span class="pill-close">&times;</span>
+                </a>
+            <?php endif; ?>
+
+            <?php if ($newArrival === 1): ?>
+                <a href="<?= BASE_URL . e(getFilterUrl(['new_arrival' => null, 'new_arrivals' => null])) ?>" class="filter-active-pill" title="Remove new arrivals filter">
+                    New Arrivals <span class="pill-close">&times;</span>
+                </a>
+            <?php endif; ?>
+
+            <?php if ($minPrice !== null || $maxPrice !== null): ?>
+                <a href="<?= BASE_URL . e(getFilterUrl(['min_price' => null, 'max_price' => null])) ?>" class="filter-active-pill" title="Remove price filter">
+                    Price: 
+                    <?php if ($minPrice !== null && $maxPrice !== null): ?>
+                        <?= formatPrice($minPrice) ?> - <?= formatPrice($maxPrice) ?>
+                    <?php elseif ($minPrice !== null): ?>
+                        Above <?= formatPrice($minPrice) ?>
+                    <?php else: ?>
+                        Up to <?= formatPrice($maxPrice) ?>
+                    <?php endif; ?>
+                    <span class="pill-close">&times;</span>
+                </a>
+            <?php endif; ?>
+
+            <?php if (!empty($search)): ?>
+                <a href="<?= BASE_URL . e(getFilterUrl(['search' => null])) ?>" class="filter-active-pill" title="Clear search query">
+                    Keyword: "<?= e($search) ?>" <span class="pill-close">&times;</span>
+                </a>
+            <?php endif; ?>
+
+            <a href="<?= BASE_URL ?>products.php" style="margin-left: auto; font-size: 0.82rem; color: var(--secondary); font-weight: 600; text-decoration: underline;">
+                Clear All Filters
+            </a>
+        </div>
+    <?php endif; ?>
+
     <!-- Catalog Control Toolbar -->
     <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; background: #fff; padding: 1rem 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 2rem;">
-        <div style="font-size: 0.9rem; color: var(--text-secondary);">
-            Showing <strong><?= count($products) ?></strong> of <strong><?= $totalProducts ?></strong> items
-            <?php if (!empty($search)): ?>
-                matching "<strong><?= e($search) ?></strong>"
-            <?php endif; ?>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <!-- Mobile Filters Toggle Button -->
+            <button type="button" id="toggleMobileFiltersBtn" class="btn btn-outline btn-sm mobile-filter-trigger" style="display: none; align-items: center; gap: 0.4rem;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                </svg>
+                Filters & Refine
+            </button>
+
+            <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                Showing <strong><?= count($products) ?></strong> of <strong><?= $totalProducts ?></strong> items
+                <?php if (!empty($search)): ?>
+                    matching "<strong><?= e($search) ?></strong>"
+                <?php endif; ?>
+            </div>
         </div>
 
-        <form method="GET" action="<?= BASE_URL ?>products.php" style="display: flex; align-items: center; gap: 1rem; margin: 0;">
-            <?php if (!empty($categorySlug)): ?><input type="hidden" name="category" value="<?= e($categorySlug) ?>"><?php endif; ?>
-            <?php if (!empty($search)): ?><input type="hidden" name="search" value="<?= e($search) ?>"><?php endif; ?>
+        <form method="GET" action="<?= BASE_URL ?>products.php" style="display: flex; align-items: center; gap: 0.8rem; margin: 0;">
+            <?php foreach ($_GET as $gk => $gv): if ($gk === 'sort' || $gk === 'page') continue; ?>
+                <input type="hidden" name="<?= e($gk) ?>" value="<?= e($gv) ?>">
+            <?php endforeach; ?>
 
             <label for="sortSelect" style="font-size: 0.85rem; font-weight: 500; color: var(--primary);">Sort By:</label>
             <select name="sort" id="sortSelect" onchange="this.form.submit()" style="padding: 0.45rem 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.88rem; background: var(--bg-cream); color: var(--text-primary); cursor: pointer;">
-                <option value="newest" <?= ($sort == 'newest') ? 'selected' : '' ?>>Newest Arrivals</option>
-                <option value="featured" <?= ($sort == 'featured') ? 'selected' : '' ?>>Featured Creations</option>
+                <option value="recommended" <?= ($sort == 'recommended') ? 'selected' : '' ?>>Curated / Recommended</option>
+                <option value="newest" <?= ($sort == 'newest') ? 'selected' : '' ?>>Newest First</option>
+                <option value="featured" <?= ($sort == 'featured') ? 'selected' : '' ?>>Featured First</option>
                 <option value="price_low" <?= ($sort == 'price_low') ? 'selected' : '' ?>>Price: Low to High</option>
                 <option value="price_high" <?= ($sort == 'price_high') ? 'selected' : '' ?>>Price: High to Low</option>
                 <option value="name_asc" <?= ($sort == 'name_asc') ? 'selected' : '' ?>>Name: A to Z</option>
@@ -155,41 +262,73 @@ require_once __DIR__ . '/includes/header.php';
     <!-- Main Content Layout (Sidebar Filters + Grid) -->
     <div class="catalog-layout">
         <!-- Filters Sidebar -->
-        <aside style="background: #fff; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
-            <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.6rem;">Categories</h3>
+        <aside id="catalogFilterSidebar" style="background: #fff; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+            
+            <!-- Quick Collections Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.6rem;">
+                <h3 style="font-size: 1.15rem; color: var(--primary); margin: 0;">Collections</h3>
+                <?php if ($hasActiveFilters): ?>
+                    <a href="<?= BASE_URL ?>products.php" style="font-size: 0.78rem; color: var(--secondary); text-decoration: underline;">Reset</a>
+                <?php endif; ?>
+            </div>
+
+            <!-- Categories List -->
             <ul style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem;">
                 <li>
-                    <a href="<?= BASE_URL ?>products.php" style="display: flex; justify-content: space-between; font-size: 0.9rem; color: <?= empty($categorySlug) ? 'var(--secondary); font-weight:600;' : 'var(--text-secondary);' ?>">
+                    <a href="<?= BASE_URL . e(getFilterUrl(['category' => null])) ?>" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; color: <?= empty($categorySlug) ? 'var(--secondary); font-weight: 700;' : 'var(--text-secondary);' ?>">
                         <span>All Collections</span>
                     </a>
                 </li>
                 <?php foreach ($allCategories as $cat): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>products.php?category=<?= urlencode($cat['slug']) ?>" style="display: flex; justify-content: space-between; font-size: 0.9rem; color: <?= ($categorySlug == $cat['slug']) ? 'var(--secondary); font-weight:600;' : 'var(--text-secondary);' ?>">
+                        <a href="<?= BASE_URL . e(getFilterUrl(['category' => $cat['slug']])) ?>" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; color: <?= ($categorySlug == $cat['slug']) ? 'var(--secondary); font-weight: 700;' : 'var(--text-secondary);' ?>">
                             <span><?= e($cat['name']) ?></span>
-                            <span style="font-size: 0.75rem; color: var(--text-muted);">(<?= $cat['prod_count'] ?>)</span>
+                            <span style="font-size: 0.75rem; background: var(--bg-cream); color: var(--text-muted); padding: 1px 7px; border-radius: 12px;"><?= $cat['prod_count'] ?></span>
                         </a>
                     </li>
                 <?php endforeach; ?>
             </ul>
 
-            <!-- Price Filter -->
-            <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.6rem;">Filter by Price</h3>
-            <form method="GET" action="<?= BASE_URL ?>products.php">
-                <?php if (!empty($categorySlug)): ?><input type="hidden" name="category" value="<?= e($categorySlug) ?>"><?php endif; ?>
-                <?php if (!empty($search)): ?><input type="hidden" name="search" value="<?= e($search) ?>"><?php endif; ?>
-                <?php if (!empty($sort)): ?><input type="hidden" name="sort" value="<?= e($sort) ?>"><?php endif; ?>
+            <!-- Special Highlights Filter (Featured / New Arrivals) -->
+            <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.6rem;">Highlights</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 2rem;">
+                <label style="display: flex; align-items: center; gap: 0.65rem; font-size: 0.9rem; color: var(--text-secondary); cursor: pointer;">
+                    <input type="checkbox" onchange="window.location.href='<?= BASE_URL . e(getFilterUrl(['featured' => ($featured === 1 ? null : 1)])) ?>'" <?= ($featured === 1) ? 'checked' : '' ?> style="accent-color: var(--primary); width: 17px; height: 17px; cursor: pointer;">
+                    <span>Featured Creations</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.65rem; font-size: 0.9rem; color: var(--text-secondary); cursor: pointer;">
+                    <input type="checkbox" onchange="window.location.href='<?= BASE_URL . e(getFilterUrl(['new_arrival' => ($newArrival === 1 ? null : 1), 'new_arrivals' => null])) ?>'" <?= ($newArrival === 1) ? 'checked' : '' ?> style="accent-color: var(--primary); width: 17px; height: 17px; cursor: pointer;">
+                    <span>New Arrivals</span>
+                </label>
+            </div>
 
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                    <input type="number" name="min_price" placeholder="Min ₹" value="<?= $minPrice > 0 ? e($minPrice) : '' ?>" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-subtle); border-radius: 4px; font-size: 0.85rem;">
-                    <input type="number" name="max_price" placeholder="Max ₹" value="<?= $maxPrice > 0 ? e($maxPrice) : '' ?>" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-subtle); border-radius: 4px; font-size: 0.85rem;">
+            <!-- Price Filter Section -->
+            <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.6rem;">Price Range</h3>
+
+            <!-- Price Presets -->
+            <div style="display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1.25rem;">
+                <a href="<?= BASE_URL . e(getFilterUrl(['min_price' => null, 'max_price' => 2000])) ?>" class="filter-price-preset-btn <?= ($minPrice === null && $maxPrice == 2000) ? 'active' : '' ?>">Under <?= formatPrice(2000) ?></a>
+                <a href="<?= BASE_URL . e(getFilterUrl(['min_price' => 2000, 'max_price' => 5000])) ?>" class="filter-price-preset-btn <?= ($minPrice == 2000 && $maxPrice == 5000) ? 'active' : '' ?>"><?= formatPrice(2000) ?> - <?= formatPrice(5000) ?></a>
+                <a href="<?= BASE_URL . e(getFilterUrl(['min_price' => 5000, 'max_price' => 10000])) ?>" class="filter-price-preset-btn <?= ($minPrice == 5000 && $maxPrice == 10000) ? 'active' : '' ?>"><?= formatPrice(5000) ?> - <?= formatPrice(10000) ?></a>
+                <a href="<?= BASE_URL . e(getFilterUrl(['min_price' => 10000, 'max_price' => null])) ?>" class="filter-price-preset-btn <?= ($minPrice == 10000 && $maxPrice === null) ? 'active' : '' ?>">Above <?= formatPrice(10000) ?></a>
+            </div>
+
+            <!-- Custom Min / Max Price Inputs -->
+            <form method="GET" action="<?= BASE_URL ?>products.php">
+                <?php foreach ($_GET as $gk => $gv): if (in_array($gk, ['min_price', 'max_price', 'page'])) continue; ?>
+                    <input type="hidden" name="<?= e($gk) ?>" value="<?= e($gv) ?>">
+                <?php endforeach; ?>
+
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <input type="number" name="min_price" placeholder="Min ₹" value="<?= $minPrice !== null ? e($minPrice) : '' ?>" min="0" step="100" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-subtle); border-radius: 4px; font-size: 0.85rem;">
+                    <input type="number" name="max_price" placeholder="Max ₹" value="<?= $maxPrice !== null ? e($maxPrice) : '' ?>" min="0" step="100" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-subtle); border-radius: 4px; font-size: 0.85rem;">
                 </div>
                 <button type="submit" class="btn btn-outline btn-block btn-sm">Apply Price</button>
             </form>
 
-            <?php if (!empty($categorySlug) || !empty($search) || $minPrice > 0 || $maxPrice > 0): ?>
-                <div style="margin-top: 1.5rem; text-align: center;">
-                    <a href="<?= BASE_URL ?>products.php" style="font-size: 0.82rem; color: var(--secondary); text-decoration: underline;">Reset All Filters</a>
+            <?php if ($hasActiveFilters): ?>
+                <div style="margin-top: 1.5rem; text-align: center; border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
+                    <a href="<?= BASE_URL ?>products.php" class="btn btn-outline btn-block btn-sm" style="color: var(--secondary);">Clear All Filters</a>
                 </div>
             <?php endif; ?>
         </aside>
@@ -222,6 +361,8 @@ require_once __DIR__ . '/includes/header.php';
 
                                 <?php if ($hasDiscount): ?>
                                     <span class="product-badge badge-discount"><?= $discountPercent ?>% OFF</span>
+                                <?php elseif (!empty($prod['is_new_arrival'])): ?>
+                                    <span class="product-badge badge-new-arrival">New Arrival</span>
                                 <?php elseif (!empty($prod['featured'])): ?>
                                     <span class="product-badge">Featured</span>
                                 <?php endif; ?>
@@ -297,13 +438,35 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileBtn = document.getElementById('toggleMobileFiltersBtn');
+    const sidebar = document.getElementById('catalogFilterSidebar');
+    if (mobileBtn && sidebar) {
+        mobileBtn.addEventListener('click', function() {
+            if (sidebar.style.display === 'block') {
+                sidebar.style.display = '';
+            } else {
+                sidebar.style.display = 'block';
+                sidebar.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    }
+});
+</script>
+
 <style>
 @media (max-width: 860px) {
-    div[style*="grid-template-columns: 240px 1fr"] {
-        grid-template-columns: 1fr !important;
+    .mobile-filter-trigger {
+        display: inline-flex !important;
     }
-    .product-grid[style*="grid-template-columns: repeat(3, 1fr)"] {
-        grid-template-columns: repeat(2, 1fr) !important;
+    #catalogFilterSidebar {
+        display: none;
+        margin-bottom: 1.5rem;
+    }
+    .catalog-layout {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
     }
 }
 </style>

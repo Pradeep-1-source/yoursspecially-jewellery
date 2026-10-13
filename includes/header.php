@@ -11,6 +11,16 @@ $metaDescription = $metaDescription ?? 'Discover luxury handcrafted jewellery, b
 $cartCount = getCartItemCount();
 $announcement = getSetting('announcement_bar', '✨ Handcrafted Luxury Jewellery • Free Shipping on Orders Above ₹999 Across India ✨');
 $customer = currentCustomer();
+
+// Fetch active categories for dynamic navigation ordered by display_order
+$navCategories = [];
+try {
+    $dbNav = getDBConnection();
+    $navCatStmt = $dbNav->query("SELECT id, name, slug FROM categories WHERE status = 1 ORDER BY display_order ASC, id ASC");
+    $navCategories = $navCatStmt->fetchAll();
+} catch (Exception $e) {
+    $navCategories = [];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -177,10 +187,15 @@ $customer = currentCustomer();
             <nav class="main-nav" aria-label="Main Navigation">
                 <a href="<?= BASE_URL ?>index.php" class="nav-link <?= (basename($_SERVER['PHP_SELF']) == 'index.php') ? 'active' : '' ?>">Home</a>
                 <a href="<?= BASE_URL ?>products.php" class="nav-link <?= (basename($_SERVER['PHP_SELF']) == 'products.php' && empty($_GET['category'])) ? 'active' : '' ?>">All Jewellery</a>
-                <a href="<?= BASE_URL ?>products.php?category=necklaces" class="nav-link <?= (($_GET['category'] ?? '') == 'necklaces') ? 'active' : '' ?>">Necklaces</a>
-                <a href="<?= BASE_URL ?>products.php?category=earrings" class="nav-link <?= (($_GET['category'] ?? '') == 'earrings') ? 'active' : '' ?>">Earrings</a>
-                <a href="<?= BASE_URL ?>products.php?category=rings" class="nav-link <?= (($_GET['category'] ?? '') == 'rings') ? 'active' : '' ?>">Rings</a>
-                <a href="<?= BASE_URL ?>products.php?category=jewellery-sets" class="nav-link <?= (($_GET['category'] ?? '') == 'jewellery-sets') ? 'active' : '' ?>">Bridal Sets</a>
+                <?php 
+                $topNavCats = array_slice($navCategories, 0, 4);
+                foreach ($topNavCats as $nCat): 
+                    $isCatActive = (($_GET['category'] ?? '') === $nCat['slug']);
+                ?>
+                    <a href="<?= BASE_URL ?>products.php?category=<?= urlencode($nCat['slug']) ?>" class="nav-link <?= $isCatActive ? 'active' : '' ?>">
+                        <?= e($nCat['name']) ?>
+                    </a>
+                <?php endforeach; ?>
                 <a href="<?= BASE_URL ?>about.php" class="nav-link <?= (basename($_SERVER['PHP_SELF']) == 'about.php') ? 'active' : '' ?>">Our Story</a>
                 <a href="<?= BASE_URL ?>contact.php" class="nav-link <?= (basename($_SERVER['PHP_SELF']) == 'contact.php') ? 'active' : '' ?>">Boutique</a>
             </nav>
@@ -271,12 +286,9 @@ function toggleSearchModal() {
                 </div>
                 <ul class="drawer-submenu" id="collectionsSubmenu">
                     <li><a href="<?= BASE_URL ?>products.php" class="drawer-sublink">All Jewellery</a></li>
-                    <li><a href="<?= BASE_URL ?>products.php?category=necklaces" class="drawer-sublink">Necklaces</a></li>
-                    <li><a href="<?= BASE_URL ?>products.php?category=earrings" class="drawer-sublink">Earrings</a></li>
-                    <li><a href="<?= BASE_URL ?>products.php?category=rings" class="drawer-sublink">Rings</a></li>
-                    <li><a href="<?= BASE_URL ?>products.php?category=bracelets" class="drawer-sublink">Bracelets</a></li>
-                    <li><a href="<?= BASE_URL ?>products.php?category=bangles" class="drawer-sublink">Bangles</a></li>
-                    <li><a href="<?= BASE_URL ?>products.php?category=jewellery-sets" class="drawer-sublink">Jewellery Sets</a></li>
+                    <?php foreach ($navCategories as $mCat): ?>
+                        <li><a href="<?= BASE_URL ?>products.php?category=<?= urlencode($mCat['slug']) ?>" class="drawer-sublink"><?= e($mCat['name']) ?></a></li>
+                    <?php endforeach; ?>
                 </ul>
             </li>
             <li class="drawer-item">

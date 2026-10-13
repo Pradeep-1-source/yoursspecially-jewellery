@@ -2191,3 +2191,111 @@ h4 { font-size: 1.25rem; }
         padding: 4px !important;
     }
 }
+
+/* ----------------------------------------------------
+   Product Variants Styling
+   ---------------------------------------------------- */
+.variant-group-wrap {
+    margin-bottom: 1.25rem;
+}
+.variant-group-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.variant-chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.variant-chip-btn {
+    border: 1px solid var(--border-subtle);
+    background: #fff;
+    color: var(--text-primary);
+    padding: 0.45rem 1rem;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    user-select: none;
+    position: relative;
+}
+.variant-chip-btn:hover {
+    border-color: var(--secondary);
+    color: var(--primary);
+    background: var(--bg-blush-light);
+}
+.variant-chip-btn.active {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(139, 44, 76, 0.25);
+    font-weight: 600;
+}
+.variant-chip-btn.chip-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    text-decoration: line-through;
+    border-color: #e5e5e5;
+    background: #f9f9f9;
+}
+.badge-new-arrival {
+    background: #1E3A8A !important;
+    color: #fff !important;
+}
+
+/* ----------------------------------------------------
+   Catalog Multi-Filters
+   ---------------------------------------------------- */
+.filter-active-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-blush);
+    color: var(--primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(139, 44, 76, 0.15);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.filter-active-pill:hover {
+    background: var(--primary);
+    color: #fff;
+}
+.filter-active-pill .pill-close {
+    font-weight: bold;
+    font-size: 1rem;
+    line-height: 1;
+}
+.filter-price-preset-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 0.86rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    text-decoration: none;
+}
+.filter-price-preset-btn:hover,
+.filter-price-preset-btn.active {
+    background: var(--bg-blush-light);
+    color: var(--primary);
+    font-weight: 600;
+}
+

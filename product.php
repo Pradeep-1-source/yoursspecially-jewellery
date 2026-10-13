@@ -57,6 +57,16 @@ try {
     $relStmt->execute([$product['category_id'], $product['id']]);
     $relatedProducts = $relStmt->fetchAll();
 
+    // Fetch active product variants
+    $vStmt = $db->prepare("SELECT * FROM product_variants WHERE product_id = ? AND status = 1 ORDER BY display_order ASC, id ASC");
+    $vStmt->execute([$product['id']]);
+    $productVariants = $vStmt->fetchAll();
+
+    $variantsByType = [];
+    foreach ($productVariants as $v) {
+        $variantsByType[$v['variant_type']][] = $v;
+    }
+
 } catch (Exception $e) {
     error_log("Product detail error: " . $e->getMessage());
     header("Location: " . BASE_URL . "products.php");
@@ -174,9 +184,55 @@ require_once __DIR__ . '/includes/header.php';
             <?php endif; ?>
 
             <!-- Description -->
-            <div style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 2rem;">
+            <div style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 1.5rem;">
                 <?= nl2br(e($product['description'])) ?>
             </div>
+
+            <!-- Product Variants Selection Box -->
+            <?php if (!empty($productVariants)): ?>
+                <div id="productVariantSelector" class="product-variant-box" style="background: var(--bg-cream); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin-bottom: 2rem;">
+                    <input type="hidden" id="selectedVariantId" value="">
+                    <input type="hidden" id="selectedVariantInfo" value="">
+
+                    <?php foreach ($variantsByType as $typeName => $typeVars): ?>
+                        <div class="variant-type-group" style="margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                                <label style="font-size: 0.9rem; font-weight: 600; color: var(--primary);">
+                                    Select <?= e($typeName) ?>: <span class="selected-type-label" id="label_<?= md5($typeName) ?>" style="color: var(--secondary); font-weight: 500;">Please select</span>
+                                </label>
+                            </div>
+                            <div class="variant-chips-wrap" style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+                                <?php foreach ($typeVars as $v): 
+                                    $isVarOutOfStock = ((int)$v['stock'] <= 0);
+                                    $vPrice = (!empty($v['price']) && $v['price'] > 0) ? (float)$v['price'] : $effectivePrice;
+                                    $priceDiff = $vPrice - $effectivePrice;
+                                ?>
+                                    <button type="button" 
+                                            class="variant-chip-btn <?= $isVarOutOfStock ? 'chip-disabled' : '' ?>"
+                                            data-variant-id="<?= $v['id'] ?>"
+                                            data-variant-type="<?= e($typeName) ?>"
+                                            data-variant-value="<?= e($v['variant_value']) ?>"
+                                            data-price="<?= $vPrice ?>"
+                                            data-sku="<?= e($v['sku'] ?: $product['sku']) ?>"
+                                            data-stock="<?= (int)$v['stock'] ?>"
+                                            onclick="selectVariantOption(this)"
+                                            <?= $isVarOutOfStock ? 'disabled title="Currently Out of Stock"' : '' ?>>
+                                        <span class="chip-value"><?= e($v['variant_value']) ?></span>
+                                        <?php if (!empty($v['price']) && $v['price'] != $effectivePrice): ?>
+                                            <span class="chip-price">(<?= formatPrice($vPrice) ?>)</span>
+                                        <?php endif; ?>
+                                        <?php if ($isVarOutOfStock): ?>
+                                            <span class="chip-sold-out">Sold Out</span>
+                                        <?php endif; ?>
+                                    </button>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+
+                    <div id="variantStockNotice" style="font-size: 0.85rem; color: var(--secondary); font-weight: 500; margin-top: 0.5rem; display: none;"></div>
+                </div>
+            <?php endif; ?>
 
             <!-- Purchase Controls -->
             <?php if ($inStock): ?>
@@ -285,14 +341,104 @@ function updateQty(delta) {
     input.value = current;
 }
 
+function selectVariantOption(btn) {
+    if (btn.classList.contains('chip-disabled')) return;
+
+    // Deselect siblings in the same group
+    const group = btn.closest('.variant-type-group');
+    group.querySelectorAll('.variant-chip-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const typeName = btn.dataset.variantType;
+    const value = btn.dataset.variantValue;
+    const variantId = btn.dataset.variantId;
+    const price = parseFloat(btn.dataset.price);
+    const sku = btn.dataset.sku;
+    const stock = parseInt(btn.dataset.stock, 10);
+
+    // Update label
+    const labelSpan = group.querySelector('.selected-type-label');
+    if (labelSpan) labelSpan.textContent = value;
+
+    // Set hidden input
+    const varInput = document.getElementById('selectedVariantId');
+    if (varInput) varInput.value = variantId;
+
+    const infoInput = document.getElementById('selectedVariantInfo');
+    if (infoInput) infoInput.value = typeName + ': ' + value;
+
+    // Update displayed price
+    const priceEl = document.querySelector('.detail-price-sale');
+    if (priceEl && !isNaN(price)) {
+        priceEl.textContent = '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Update SKU
+    const skuBadge = document.querySelector('.sku-badge strong');
+    if (skuBadge && sku) {
+        skuBadge.textContent = sku;
+    }
+
+    // Update stock limits & notice
+    const qtyInput = document.getElementById('productQuantity');
+    const notice = document.getElementById('variantStockNotice');
+    const addBtn = document.querySelector('.ajax-add-to-cart');
+
+    if (qtyInput) {
+        qtyInput.setAttribute('max', stock);
+        if (parseInt(qtyInput.value, 10) > stock) {
+            qtyInput.value = Math.max(1, stock);
+        }
+    }
+
+    if (notice) {
+        notice.style.display = 'block';
+        if (stock <= 0) {
+            notice.style.color = '#DC2626';
+            notice.textContent = 'This variant option is currently sold out.';
+            if (addBtn) addBtn.disabled = true;
+        } else if (stock <= 5) {
+            notice.style.color = '#B45309';
+            notice.textContent = 'Only ' + stock + ' piece' + (stock > 1 ? 's' : '') + ' left in this option!';
+            if (addBtn) addBtn.disabled = false;
+        } else {
+            notice.style.color = '#16A34A';
+            notice.textContent = 'In Stock (' + stock + ' pieces ready to ship)';
+            if (addBtn) addBtn.disabled = false;
+        }
+    }
+}
+
 function buyNow(productId) {
     const qtyInput = document.getElementById('productQuantity');
     const quantity = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+
+    // Check variant requirement
+    const hasVariants = <?= !empty($productVariants) ? 'true' : 'false' ?>;
+    const variantInput = document.getElementById('selectedVariantId');
+    const variantId = variantInput ? variantInput.value : '';
+
+    if (hasVariants && !variantId) {
+        const selector = document.getElementById('productVariantSelector');
+        if (selector) {
+            selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            selector.style.borderColor = '#C9654E';
+            selector.style.boxShadow = '0 0 15px rgba(201, 101, 78, 0.3)';
+            setTimeout(() => {
+                selector.style.boxShadow = '';
+            }, 1200);
+        }
+        alert('Please select an option (e.g. Size, Material) before buying.');
+        return;
+    }
 
     const formData = new FormData();
     formData.append('action', 'add');
     formData.append('product_id', productId);
     formData.append('quantity', quantity);
+    if (variantId) {
+        formData.append('variant_id', variantId);
+    }
 
     fetch('api/cart.php', {
         method: 'POST',
