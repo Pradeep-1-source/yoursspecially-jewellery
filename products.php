@@ -39,12 +39,20 @@ function getFilterUrl($overrides = []) {
 try {
     $db = getDBConnection();
 
-    // Fetch all active categories sorted by admin display_order
-    $catStmt = $db->query("SELECT id, name, slug, (SELECT COUNT(*) FROM products WHERE category_id = categories.id AND status = 1) as prod_count 
-                           FROM categories 
-                           WHERE status = 1 
-                           ORDER BY display_order ASC, name ASC");
-    $allCategories = $catStmt->fetchAll();
+    // Fetch all active categories sorted by admin display_order (with fallback)
+    try {
+        $catStmt = $db->query("SELECT id, name, slug, (SELECT COUNT(*) FROM products WHERE category_id = categories.id AND status = 1) as prod_count 
+                               FROM categories 
+                               WHERE status = 1 
+                               ORDER BY display_order ASC, name ASC");
+        $allCategories = $catStmt->fetchAll();
+    } catch (Throwable $e) {
+        $catStmt = $db->query("SELECT id, name, slug, (SELECT COUNT(*) FROM products WHERE category_id = categories.id AND status = 1) as prod_count 
+                               FROM categories 
+                               WHERE status = 1 
+                               ORDER BY name ASC");
+        $allCategories = $catStmt->fetchAll();
+    }
 
     // Filter by Category
     if (!empty($categorySlug)) {
@@ -82,8 +90,18 @@ try {
         $whereConditions[] = "p.featured = 1";
     }
 
+    // Column existence check for graceful fallback
+    $hasProdOrder = true;
+    $hasProdNew = true;
+    try {
+        $chk1 = $db->query("SHOW COLUMNS FROM `products` LIKE 'display_order'");
+        $hasProdOrder = (bool)$chk1->fetch();
+        $chk2 = $db->query("SHOW COLUMNS FROM `products` LIKE 'is_new_arrival'");
+        $hasProdNew = (bool)$chk2->fetch();
+    } catch (Throwable $e) {}
+
     // Filter by New Arrival Status
-    if ($newArrival === 1) {
+    if ($newArrival === 1 && $hasProdNew) {
         $whereConditions[] = "p.is_new_arrival = 1";
     }
 
@@ -99,14 +117,14 @@ try {
             $orderBy = "p.id DESC";
             break;
         case 'featured':
-            $orderBy = "p.featured DESC, p.display_order ASC, p.id DESC";
+            $orderBy = "p.featured DESC, " . ($hasProdOrder ? "p.display_order ASC, " : "") . "p.id DESC";
             break;
         case 'name_asc':
             $orderBy = "p.name ASC";
             break;
         case 'recommended':
         default:
-            $orderBy = "p.display_order ASC, p.id DESC";
+            $orderBy = ($hasProdOrder ? "p.display_order ASC, " : "") . "p.id DESC";
             $sort = 'recommended';
             break;
     }

@@ -123,6 +123,9 @@ function getDBConnection(): PDO {
         try {
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
             $pdo->exec("SET NAMES " . DB_CHARSET);
+
+            // Automatically verify required schema and default data integrity
+            autoMigrateDatabaseIfNeeded($pdo);
         } catch (Throwable $e) {
             // Log real error securely on server
             error_log("Database Connection Error: " . $e->getMessage());
@@ -241,4 +244,128 @@ function getDBConnection(): PDO {
     }
 
     return $pdo;
+}
+
+/**
+ * Automatically ensures required columns, tables, and core catalogue data exist.
+ * Runs silently and safely without modifying or overwriting existing user data.
+ */
+function autoMigrateDatabaseIfNeeded(PDO $pdo): void {
+    static $migrated = false;
+    if ($migrated) return;
+    $migrated = true;
+
+    try {
+        // 1. Ensure categories table has display_order
+        $hasCol = false;
+        try {
+            $chk = $pdo->query("SHOW COLUMNS FROM `categories` LIKE 'display_order'");
+            $hasCol = (bool)$chk->fetch();
+        } catch (Throwable $e) {}
+
+        if (!$hasCol) {
+            $pdo->exec("ALTER TABLE `categories` ADD COLUMN `display_order` INT NOT NULL DEFAULT 0 AFTER `status`");
+            try {
+                $pdo->exec("ALTER TABLE `categories` ADD INDEX `idx_cat_order` (`status`, `display_order`, `id`)");
+            } catch (Throwable $e) {}
+        }
+
+        // 2. Ensure default 8 core categories exist if categories table is empty
+        try {
+            $catCount = (int)$pdo->query("SELECT COUNT(*) FROM `categories`")->fetchColumn();
+            if ($catCount === 0) {
+                $pdo->exec("INSERT INTO `categories` (`id`, `name`, `slug`, `description`, `image`, `status`, `display_order`) VALUES
+                    (1, 'Necklaces', 'necklaces', 'Timeless chokers, layered pendants, and statement heritage necklaces made to mesmerize.', 'assets/images/cat-necklaces.jpg', 1, 1),
+                    (2, 'Earrings', 'earrings', 'From delicate diamond solitaires to graceful chandelier drops and regal jhumkas.', 'assets/images/cat-earrings.jpg', 1, 2),
+                    (3, 'Bracelets', 'bracelets', 'Artisanal tennis bracelets, charm cuffs, and delicate chain silhouettes.', 'assets/images/cat-bracelets.jpg', 1, 3),
+                    (4, 'Rings', 'rings', 'Eternity bands, romantic solitaire rings, and rose-gold statement pieces.', 'assets/images/cat-rings.jpg', 1, 4),
+                    (5, 'Bangles', 'bangles', 'Exquisite handcrafted bridal kadas, rose gold open bangles, and sleek everyday stacks.', 'assets/images/cat-bangles.jpg', 1, 5),
+                    (6, 'Chains', 'chains', 'Dainty Italian snake chains, box links, and minimalist everyday essentials.', 'assets/images/cat-chains.jpg', 1, 6),
+                    (7, 'Jewellery Sets', 'jewellery-sets', 'Harmoniously curated necklace and earring sets for festive celebrations and weddings.', 'assets/images/cat-sets.jpg', 1, 7),
+                    (8, 'New Arrivals', 'new-arrivals', 'Our freshest seasonal collection featuring couture rose-gold and gemstone creations.', 'assets/images/cat-new.jpg', 1, 8)
+                    ON DUPLICATE KEY UPDATE `name` = VALUES(`name`)");
+            }
+        } catch (Throwable $e) {}
+
+        // 3. Ensure products table has display_order and is_new_arrival
+        $hasProdOrder = false;
+        $hasProdNew = false;
+        try {
+            $chk1 = $pdo->query("SHOW COLUMNS FROM `products` LIKE 'display_order'");
+            $hasProdOrder = (bool)$chk1->fetch();
+            $chk2 = $pdo->query("SHOW COLUMNS FROM `products` LIKE 'is_new_arrival'");
+            $hasProdNew = (bool)$chk2->fetch();
+        } catch (Throwable $e) {}
+
+        if (!$hasProdOrder) {
+            $pdo->exec("ALTER TABLE `products` ADD COLUMN `display_order` INT NOT NULL DEFAULT 0 AFTER `stock`");
+            try {
+                $pdo->exec("ALTER TABLE `products` ADD INDEX `idx_prod_order` (`status`, `display_order`, `id`)");
+            } catch (Throwable $e) {}
+        }
+        if (!$hasProdNew) {
+            $pdo->exec("ALTER TABLE `products` ADD COLUMN `is_new_arrival` TINYINT(1) NOT NULL DEFAULT 0 AFTER `featured`");
+            try {
+                $pdo->exec("ALTER TABLE `products` ADD INDEX `idx_prod_new` (`status`, `is_new_arrival`, `display_order`)");
+            } catch (Throwable $e) {}
+        }
+
+        // 4. Ensure default products exist if products table is empty
+        try {
+            $prodCount = (int)$pdo->query("SELECT COUNT(*) FROM `products`")->fetchColumn();
+            if ($prodCount === 0) {
+                $pdo->exec("INSERT INTO `products` (`id`, `category_id`, `name`, `slug`, `description`, `price`, `sale_price`, `stock`, `sku`, `main_image`, `status`, `featured`, `is_new_arrival`, `display_order`) VALUES
+                    (1, 1, 'Aura Eternity Rose Pendant Necklace', 'aura-eternity-rose-pendant-necklace', 'Delicately sculpted with infinity motif inspiration in 18k rose gold finish, studded with high-luster zircon gemstones. Designed for both intimate evenings and effortless everyday glamour.', 2899.00, 2299.00, 15, 'YSJ-NECK-001', 'assets/images/prod-neck-1.jpg', 1, 1, 1, 1),
+                    (2, 1, 'Celeste Empress Kundan Choker', 'celeste-empress-kundan-choker', 'A regal bridal choker adorned with royal uncut Kundan glass stones, cultured freshwater pearls, and intricate meenakari accents on antique micro-gold polish.', 7499.00, 5999.00, 8, 'YSJ-NECK-002', 'assets/images/prod-neck-2.jpg', 1, 1, 1, 2),
+                    (3, 2, 'Seraphina Rose Gold Drop Earrings', 'seraphina-rose-gold-drop-earrings', 'Cascading rose gold drop earrings featuring precision faceted pear-cut crystals that catch the twilight with every delicate sway.', 1999.00, 1599.00, 22, 'YSJ-EAR-001', 'assets/images/prod-ear-1.jpg', 1, 1, 1, 3),
+                    (4, 2, 'Noor Diamond Blossom Chandbali Jhumkas', 'noor-diamond-blossom-chandbali-jhumkas', 'Timeless crescent silhouettes featuring floral cluster studs, micro-pearl tassels, and hand-finished rhodium borders.', 3499.00, 2799.00, 12, 'YSJ-EAR-002', 'assets/images/prod-ear-2.jpg', 1, 0, 1, 4),
+                    (5, 3, 'Infinity Solitaire Tennis Bracelet', 'infinity-solitaire-tennis-bracelet', 'A continuous stream of hand-set pavé stones cradled in a dual-tone rose and wine gold setting with a secure double safety clasp.', 3299.00, 2699.00, 18, 'YSJ-BRAC-001', 'assets/images/prod-brac-1.jpg', 1, 1, 0, 5),
+                    (6, 3, 'Elysian Minimalist Charm Cuff', 'elysian-minimalist-charm-cuff', 'Modern open cuff bracelet accented by twin brilliant-cut solitaires. Flexible fit designed for effortless luxury stacking.', 2199.00, 1799.00, 25, 'YSJ-BRAC-002', 'assets/images/prod-brac-2.jpg', 1, 0, 0, 6),
+                    (7, 4, 'Everlasting Love Rose Gold Eternity Ring', 'everlasting-love-rose-gold-eternity-ring', 'Symbolizing infinite devotion with an intertwined double band motif inspired by our signature brand infinity crest.', 1899.00, 1499.00, 30, 'YSJ-RING-001', 'assets/images/prod-ring-1.jpg', 1, 1, 0, 7),
+                    (8, 4, 'Royal Solitaire Crown Ring', 'royal-solitaire-crown-ring', 'Features a prominent 2-carat look cushion cut centerpiece held securely in a six-prong crown gallery with micro-pave shank.', 2499.00, 1999.00, 14, 'YSJ-RING-002', 'assets/images/prod-ring-2.jpg', 1, 1, 0, 8),
+                    (9, 5, 'Gulmohar Handcrafted Kundan Kada Bangles', 'gulmohar-handcrafted-kundan-kada-bangles', 'Pair of openable artisanal kadas with antique copper-gold plating and ruby red cabochons. Fits wrists 2.4 to 2.8 comfortably.', 4599.00, 3899.00, 10, 'YSJ-BANG-001', 'assets/images/prod-bang-1.jpg', 1, 0, 0, 9),
+                    (10, 5, 'Mirabelle Sleek Rose Gold Bangle Set', 'mirabelle-sleek-rose-gold-bangle-set', 'Set of 4 ultra-chic slim bangles with diamond-cut facets that catch the light effortlessly. Ideal for workplace chic and festive layering.', 2799.00, 2199.00, 20, 'YSJ-BANG-002', 'assets/images/prod-bang-2.jpg', 1, 0, 0, 10),
+                    (11, 6, 'Venetian Box Rose Gold Rope Chain', 'venetian-box-rose-gold-rope-chain', 'Silky smooth 18-inch Italian box chain with radiant rose tint and anti-tarnish micro-coating. Lobster clasp closure.', 1699.00, 1299.00, 35, 'YSJ-CHN-001', 'assets/images/prod-chn-1.jpg', 1, 0, 0, 11),
+                    (12, 6, 'Lumina Layered Dual Pendant Chain', 'lumina-layered-dual-pendant-chain', 'Double strand necklace combining a delicate beaded choker with a longer coin medallion pendant.', 2299.00, 1849.00, 16, 'YSJ-CHN-002', 'assets/images/prod-chn-2.jpg', 1, 0, 0, 12),
+                    (13, 7, 'Sultana Heritage Emerald & Pearl Bridal Set', 'sultana-heritage-emerald-pearl-bridal-set', 'Grand festive ensemble comprising a multi-tier necklace, matching statement earrings, and maang tikka studded with emerald green drop stones.', 9999.00, 7999.00, 6, 'YSJ-SET-001', 'assets/images/prod-set-1.jpg', 1, 1, 0, 13),
+                    (14, 7, 'Aditi Rose Solitaire Necklace & Earring Set', 'aditi-rose-solitaire-necklace-earring-set', 'Understated elegance for cocktail parties, engagements, and formal dinners. 18k rose gold finish with radiant zircon halos.', 4999.00, 3999.00, 15, 'YSJ-SET-002', 'assets/images/prod-set-2.jpg', 1, 1, 0, 14),
+                    (15, 8, 'Valerie Sculpted Butterfly Ring', 'valerie-sculpted-butterfly-ring', 'Whimsical spring collection release featuring 3D layered wings sparkling with pink sapphire and diamond colored stones.', 2199.00, 1749.00, 20, 'YSJ-NEW-001', 'assets/images/prod-new-1.jpg', 1, 1, 0, 15),
+                    (16, 8, 'Aria Lariat Floating Pearl Choker', 'aria-lariat-floating-pearl-choker', 'Contemporary bohemian silhouette with baroque pearl dropper resting along the collarbone.', 2599.00, 2099.00, 18, 'YSJ-NEW-002', 'assets/images/prod-new-2.jpg', 1, 1, 0, 16)
+                    ON DUPLICATE KEY UPDATE `name` = VALUES(`name`)");
+            }
+        } catch (Throwable $e) {}
+
+        // 5. Ensure product_variants table exists
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `product_variants` (
+            `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            `product_id` INT UNSIGNED NOT NULL,
+            `variant_type` VARCHAR(50) NOT NULL DEFAULT 'Option',
+            `variant_value` VARCHAR(100) NOT NULL,
+            `sku` VARCHAR(60) DEFAULT NULL,
+            `price` DECIMAL(10,2) DEFAULT NULL,
+            `stock` INT NOT NULL DEFAULT 10,
+            `status` TINYINT(1) NOT NULL DEFAULT 1,
+            `display_order` INT NOT NULL DEFAULT 0,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX `idx_pv_prod` (`product_id`, `status`, `display_order`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        // 6. Ensure cart_items and order_items have variant columns
+        try {
+            $chkC = $pdo->query("SHOW COLUMNS FROM `cart_items` LIKE 'variant_id'");
+            if (!$chkC->fetch()) {
+                $pdo->exec("ALTER TABLE `cart_items` ADD COLUMN `variant_id` INT UNSIGNED DEFAULT NULL AFTER `product_id`, ADD COLUMN `variant_info` VARCHAR(255) DEFAULT NULL AFTER `variant_id`");
+            }
+        } catch (Throwable $e) {}
+
+        try {
+            $chkO = $pdo->query("SHOW COLUMNS FROM `order_items` LIKE 'variant_id'");
+            if (!$chkO->fetch()) {
+                $pdo->exec("ALTER TABLE `order_items` ADD COLUMN `variant_id` INT UNSIGNED DEFAULT NULL AFTER `product_id`, ADD COLUMN `variant_info` VARCHAR(255) DEFAULT NULL AFTER `variant_id`");
+            }
+        } catch (Throwable $e) {}
+
+    } catch (Throwable $e) {
+        error_log("Schema auto-migration notice: " . $e->getMessage());
+    }
 }

@@ -32,20 +32,40 @@ try {
     }
 
     // 1. Fetch all active categories dynamically in saved display order (no hardcoded limit)
-    $catStmt = $db->query("SELECT * FROM categories WHERE status = 1 ORDER BY display_order ASC, id ASC");
-    $categories = $catStmt->fetchAll();
+    try {
+        $catStmt = $db->query("SELECT * FROM categories WHERE status = 1 ORDER BY display_order ASC, id ASC");
+        $categories = $catStmt->fetchAll();
+    } catch (Throwable $e) {
+        $catStmt = $db->query("SELECT * FROM categories WHERE status = 1 ORDER BY id ASC");
+        $categories = $catStmt->fetchAll();
+    }
 
     // 2. Fetch featured products (active & explicitly marked as featured by admin, ordered by display_order)
-    $featuredStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.featured = 1 AND p.status = 1 ORDER BY p.display_order ASC, p.id DESC");
-    $featuredProducts = $featuredStmt->fetchAll();
+    try {
+        $featuredStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.featured = 1 AND p.status = 1 ORDER BY p.display_order ASC, p.id DESC");
+        $featuredProducts = $featuredStmt->fetchAll();
+    } catch (Throwable $e) {
+        $featuredStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.featured = 1 AND p.status = 1 ORDER BY p.id DESC");
+        $featuredProducts = $featuredStmt->fetchAll();
+    }
 
     // 3. Fetch new arrivals (active & explicitly marked as new arrival by admin, ordered by display_order)
-    $newArrivalsStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_new_arrival = 1 AND p.status = 1 ORDER BY p.display_order ASC, p.id DESC");
-    $newArrivals = $newArrivalsStmt->fetchAll();
+    try {
+        $newArrivalsStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_new_arrival = 1 AND p.status = 1 ORDER BY p.display_order ASC, p.id DESC");
+        $newArrivals = $newArrivalsStmt->fetchAll();
+    } catch (Throwable $e) {
+        $newArrivalsStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 1 ORDER BY p.id DESC LIMIT 4");
+        $newArrivals = $newArrivalsStmt->fetchAll();
+    }
 
     // 4. Fetch best sellers / curated pieces (fallback active items)
-    $bestSellersStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 1 ORDER BY p.display_order ASC, p.id DESC LIMIT 4");
-    $bestSellers = $bestSellersStmt->fetchAll();
+    try {
+        $bestSellersStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 1 ORDER BY p.display_order ASC, p.id DESC LIMIT 4");
+        $bestSellers = $bestSellersStmt->fetchAll();
+    } catch (Throwable $e) {
+        $bestSellersStmt = $db->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 1 ORDER BY p.id DESC LIMIT 4");
+        $bestSellers = $bestSellersStmt->fetchAll();
+    }
 
 } catch (Exception $e) {
     error_log("Homepage query error: " . $e->getMessage());

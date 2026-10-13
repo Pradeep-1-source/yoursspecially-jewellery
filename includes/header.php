@@ -12,13 +12,18 @@ $cartCount = getCartItemCount();
 $announcement = getSetting('announcement_bar', '✨ Handcrafted Luxury Jewellery • Free Shipping on Orders Above ₹999 Across India ✨');
 $customer = currentCustomer();
 
-// Fetch active categories for dynamic navigation ordered by display_order
+// Fetch active categories for dynamic navigation ordered by display_order (with fallback)
 $navCategories = [];
 try {
     $dbNav = getDBConnection();
-    $navCatStmt = $dbNav->query("SELECT id, name, slug FROM categories WHERE status = 1 ORDER BY display_order ASC, id ASC");
-    $navCategories = $navCatStmt->fetchAll();
-} catch (Exception $e) {
+    try {
+        $navCatStmt = $dbNav->query("SELECT id, name, slug FROM categories WHERE status = 1 ORDER BY display_order ASC, id ASC");
+        $navCategories = $navCatStmt->fetchAll();
+    } catch (Throwable $e) {
+        $navCatStmt = $dbNav->query("SELECT id, name, slug FROM categories WHERE status = 1 ORDER BY id ASC");
+        $navCategories = $navCatStmt->fetchAll();
+    }
+} catch (Throwable $e) {
     $navCategories = [];
 }
 ?>
