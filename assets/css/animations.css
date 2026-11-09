@@ -1,0 +1,776 @@
+/* ==========================================================
+   YoursSpeciallyJewellery - Haute Joaillerie Luxury Animation Suite
+   Inspired by High-End European Jewellery Ateliers
+   (Cartier, Bvlgari, Van Cleef & Arpels)
+   ========================================================== */
+
+/* ----------------------------------------------------
+   1. LUXURY ATELIER PRELOADER
+   ---------------------------------------------------- */
+.luxury-preloader {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    background: radial-gradient(circle at center, #4A1528 0%, #200612 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.65s cubic-bezier(0.25, 1, 0.5, 1), 
+                visibility 0.65s cubic-bezier(0.25, 1, 0.5, 1);
+    pointer-events: all;
+}
+
+.luxury-preloader.fade-out {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.luxury-preloader-content {
+    text-align: center;
+    position: relative;
+    max-width: 320px;
+    padding: 20px;
+}
+
+.luxury-preloader-emblem {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preloader-ring {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(197, 160, 89, 0.2);
+    border-top-color: #C5A059;
+    border-right-color: #E5CA85;
+    animation: luxurySpin 1.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.preloader-ring::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px dashed rgba(201, 101, 78, 0.35);
+    animation: luxurySpinRev 4s linear infinite;
+}
+
+.preloader-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    animation: preloaderPulse 2.4s ease-in-out infinite;
+}
+
+.preloader-sparkle {
+    position: absolute;
+    top: -4px;
+    right: -2px;
+    color: #E5CA85;
+    font-size: 15px;
+    animation: sparkleTwinkle 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 6px #C5A059);
+}
+
+.preloader-brand {
+    margin-bottom: 1.5rem;
+}
+
+.preloader-title {
+    display: block;
+    font-family: var(--font-serif, 'Cormorant Garamond', serif);
+    font-size: 1.7rem;
+    font-weight: 600;
+    color: #FFFFFF;
+    letter-spacing: 2px;
+    line-height: 1.2;
+    margin-bottom: 0.3rem;
+}
+
+.preloader-subtitle {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 4px;
+    color: #C5A059;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.preloader-bar {
+    width: 140px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 auto;
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+.preloader-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #C5A059, #E5CA85, #C9654E);
+    border-radius: 2px;
+    animation: preloaderFill 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes luxurySpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes luxurySpinRev {
+    0% { transform: rotate(360deg); }
+    100% { transform: rotate(0deg); }
+}
+
+@keyframes preloaderPulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(197,160,89,0.2)); }
+    50% { transform: scale(1.04); filter: drop-shadow(0 0 20px rgba(197,160,89,0.45)); }
+}
+
+@keyframes preloaderFill {
+    0% { width: 0%; }
+    50% { width: 70%; }
+    100% { width: 100%; }
+}
+
+/* ----------------------------------------------------
+   2. HERO CINEMATIC ENTRANCE & KEN BURNS MOTION
+   ---------------------------------------------------- */
+.hero-slider-container {
+    perspective: 1000px;
+    overflow: hidden;
+}
+
+.hero-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 1.2s cubic-bezier(0.25, 1, 0.5, 1), 
+                visibility 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.hero-slide.active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 2;
+}
+
+/* Dedicated Ken Burns Background Layer */
+.hero-slide-bg {
+    position: absolute;
+    inset: -5%;
+    width: 110%;
+    height: 110%;
+    background-size: cover;
+    background-position: center;
+    transform: scale(1.12);
+    transition: transform 7.5s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
+    z-index: 0;
+}
+
+.hero-slide.active .hero-slide-bg {
+    transform: scale(1.02);
+}
+
+/* Luxury Ethereal Background Watermark Typography */
+.hero-bg-watermark {
+    position: absolute;
+    right: 4%;
+    bottom: 5%;
+    font-family: var(--font-serif, 'Cormorant Garamond', serif);
+    font-size: clamp(4.5rem, 15vw, 13rem);
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: rgba(255, 255, 255, 0.04);
+    text-transform: uppercase;
+    user-select: none;
+    pointer-events: none;
+    z-index: 1;
+    line-height: 1;
+    opacity: 0;
+    transform: translateX(45px);
+    transition: opacity 1.8s ease, transform 1.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-slide.active .hero-bg-watermark {
+    opacity: 1;
+    transform: translateX(0);
+    animation: luxuryWatermarkFloat 14s ease-in-out infinite alternate;
+}
+
+@keyframes luxuryWatermarkFloat {
+    0% { transform: translateX(0) translateY(0); }
+    100% { transform: translateX(-30px) translateY(-10px); }
+}
+
+/* Editorial Eyebrow Tag with Golden Line Reveal */
+.hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--gold-light, #E5CA85);
+    font-size: 0.78rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    opacity: 0;
+    transform: translateY(15px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s,
+                transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+}
+
+.eyebrow-dash {
+    display: inline-block;
+    width: 0;
+    height: 1px;
+    background: linear-gradient(90deg, #E5CA85, #C5A059);
+    transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.3s;
+}
+
+.hero-slide.active .hero-eyebrow {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.hero-slide.active .hero-eyebrow .eyebrow-dash {
+    width: 34px;
+}
+
+/* Hero Title Typography Reveal */
+.hero-title {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.3s,
+                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.3s;
+}
+
+.hero-slide.active .hero-title {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Word-by-word reveal helper */
+.hero-word-wrap {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    margin-right: 0.26em;
+}
+
+.hero-word {
+    display: inline-block;
+    transform: translateY(115%);
+    opacity: 0;
+    transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), 
+                opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, opacity;
+}
+
+.hero-slide.active .hero-word {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* Hero Subtitle */
+.hero-subtitle {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.5s,
+                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.5s;
+}
+
+.hero-slide.active .hero-subtitle {
+    opacity: 0.95;
+    transform: translateY(0);
+}
+
+/* Hero Buttons */
+.hero-btn-group {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.65s,
+                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.65s;
+}
+
+.hero-slide.active .hero-btn-group {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ----------------------------------------------------
+   3. LUXURY BUTTON MICRO-INTERACTIONS
+   ---------------------------------------------------- */
+.btn-luxury-primary {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #5B1B36 0%, #3F1024 100%);
+    box-shadow: 0 4px 18px rgba(91, 27, 54, 0.35);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                background 0.35s ease;
+}
+
+.btn-luxury-primary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -130%;
+    width: 80%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(229, 202, 133, 0.45) 50%, transparent 100%);
+    transform: skewX(-25deg);
+    transition: left 0.85s cubic-bezier(0.25, 1, 0.5, 1);
+    pointer-events: none;
+}
+
+.btn-luxury-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(91, 27, 54, 0.45), 0 0 15px rgba(197, 160, 89, 0.25);
+}
+
+.btn-luxury-primary:hover::after {
+    left: 150%;
+}
+
+.btn-arrow-icon {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-luxury-primary:hover .btn-arrow-icon {
+    transform: translateX(4px);
+}
+
+.btn-luxury-outline {
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-luxury-outline:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: #E5CA85 !important;
+    color: #FFFFFF !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* ----------------------------------------------------
+   4. GOLDEN SPARKLE PARTICLES
+   ---------------------------------------------------- */
+.hero-sparkle-container,
+.luxury-sparkle-field {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.golden-sparkle {
+    position: absolute;
+    color: #E5CA85;
+    font-size: 14px;
+    line-height: 1;
+    pointer-events: none;
+    opacity: 0;
+    filter: drop-shadow(0 0 8px rgba(229, 202, 133, 0.8));
+    animation: sparkleTwinkle 3.2s ease-in-out infinite;
+}
+
+@keyframes sparkleTwinkle {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0) rotate(0deg);
+    }
+    45%, 55% {
+        opacity: 0.9;
+        transform: scale(1.15) rotate(45deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.2) rotate(45deg);
+    }
+}
+
+/* ----------------------------------------------------
+   5. SCROLL REVEAL & STAGGER ENGINE
+   ---------------------------------------------------- */
+/* Section Eyebrow with gold dash */
+.section-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 3px;
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.section-eyebrow .eyebrow-dash {
+    width: 22px;
+}
+
+/* Stagger animations for elements */
+.reveal-init {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+}
+
+.reveal-init.is-revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Staggered Grid Animations */
+.category-card.reveal-init,
+.product-card.reveal-init,
+.trust-item.reveal-init,
+.insta-card.reveal-init {
+    transition-delay: calc(var(--stagger, 0) * 80ms);
+}
+
+/* ----------------------------------------------------
+   6. PRODUCT SHOWCASE HOVER & SHINE
+   ---------------------------------------------------- */
+.product-card {
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.45s ease;
+    border: 1px solid rgba(91, 27, 54, 0.08);
+}
+
+.product-card:hover {
+    transform: translateY(-8px) scale(1.008);
+    box-shadow: 0 20px 42px rgba(91, 27, 54, 0.13), 0 4px 15px rgba(197, 160, 89, 0.12);
+    border-color: rgba(197, 160, 89, 0.45);
+}
+
+/* Smooth zoom on product image */
+.product-thumb-wrap {
+    position: relative;
+    overflow: hidden;
+}
+
+.product-thumb {
+    transition: transform 0.9s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
+}
+
+.product-card:hover .product-thumb {
+    transform: scale(1.09);
+}
+
+/* Luxury Diagonal Light Shine Sweep */
+.product-thumb-wrap::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -140%;
+    width: 80%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.32) 50%, transparent 100%);
+    transform: skewX(-25deg);
+    transition: left 0.95s cubic-bezier(0.25, 1, 0.5, 1);
+    pointer-events: none;
+    z-index: 3;
+}
+
+.product-card:hover .product-thumb-wrap::after {
+    left: 170%;
+}
+
+/* Add to Bag and Buy Now Buttons */
+.btn-add-cart {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-add-cart:hover {
+    background: var(--primary, #5B1B36) !important;
+    color: #FFFFFF !important;
+    border-color: var(--primary, #5B1B36) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(91, 27, 54, 0.25);
+}
+
+.btn-add-cart:active {
+    transform: scale(0.97);
+}
+
+.btn-buy-now {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px rgba(201, 101, 78, 0.3);
+}
+
+.btn-buy-now::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.75s ease;
+}
+
+.btn-buy-now:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(201, 101, 78, 0.45);
+}
+
+.btn-buy-now:hover::after {
+    left: 140%;
+}
+
+.btn-buy-now:active {
+    transform: scale(0.97);
+}
+
+/* Wishlist Heart Bounce */
+.wishlist-toggle-btn {
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s ease;
+}
+
+.wishlist-toggle-btn:hover {
+    transform: scale(1.18);
+}
+
+.wishlist-toggle-btn.active svg {
+    animation: luxuryHeartPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    fill: #C9654E;
+    stroke: #C9654E;
+}
+
+@keyframes luxuryHeartPop {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.4) rotate(-10deg); }
+    70% { transform: scale(0.9) rotate(5deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+/* ----------------------------------------------------
+   7. CATEGORY CARDS ELEGANT ZOOM & OVERLAY
+   ---------------------------------------------------- */
+.category-card {
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.category-card:hover {
+    transform: translateY(-7px) scale(1.01);
+    box-shadow: 0 20px 45px rgba(91, 27, 54, 0.16), 0 0 20px rgba(197, 160, 89, 0.18);
+}
+
+.category-img-box img {
+    transition: transform 0.85s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
+}
+
+.category-card:hover .category-img-box img {
+    transform: scale(1.1);
+}
+
+.category-explore {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), color 0.35s ease;
+}
+
+.category-card:hover .category-explore {
+    transform: translateX(6px);
+    color: #E5CA85;
+}
+
+/* ----------------------------------------------------
+   8. EDITORIAL CURTAIN REVEAL (Atelier Story)
+   ---------------------------------------------------- */
+.promo-editorial-section {
+    position: relative;
+    overflow: hidden;
+}
+
+.promo-banner-card {
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.promo-banner-card:hover {
+    box-shadow: 0 25px 60px rgba(91, 27, 54, 0.12);
+}
+
+/* Editorial curtain mask */
+.promo-image-side {
+    position: relative;
+    overflow: hidden;
+}
+
+.promo-image-side img {
+    transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
+}
+
+.promo-banner-card:hover .promo-image-side img {
+    transform: scale(1.05);
+}
+
+.reveal-curtain {
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 1.2s cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* ----------------------------------------------------
+   9. TRUST BADGES & INSTAGRAM HOVER
+   ---------------------------------------------------- */
+.trust-item {
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.4s ease;
+}
+
+.trust-item:hover {
+    transform: translateY(-5px);
+}
+
+.trust-icon-box {
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                background 0.4s ease, 
+                color 0.4s ease;
+}
+
+.trust-item:hover .trust-icon-box {
+    transform: scale(1.12) rotate(5deg);
+    background: var(--primary, #5B1B36);
+    color: #E5CA85;
+}
+
+.insta-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.insta-card img {
+    transition: transform 0.85s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.insta-card:hover img {
+    transform: scale(1.12);
+}
+
+.insta-hover-overlay {
+    transition: opacity 0.4s ease, backdrop-filter 0.4s ease;
+}
+
+/* ----------------------------------------------------
+   10. AMBIENT LUXURY GLOW ORBS & DETAIL GALLERY
+   ---------------------------------------------------- */
+.gallery-main img {
+    transition: transform 0.65s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+.gallery-main:hover img {
+    transform: scale(1.04);
+}
+
+.thumb-item {
+    transition: border-color 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease !important;
+}
+
+.thumb-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(197, 160, 89, 0.5) !important;
+}
+
+.thumb-item.active {
+    border-color: #C5A059 !important;
+    box-shadow: 0 4px 12px rgba(197, 160, 89, 0.35);
+}
+
+.luxury-ambient-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    animation: luxuryOrbDrift 18s ease-in-out infinite alternate;
+}
+
+.orb-rose {
+    background: radial-gradient(circle, #C9654E 0%, transparent 70%);
+}
+
+.orb-gold {
+    background: radial-gradient(circle, #C5A059 0%, transparent 70%);
+}
+
+@keyframes luxuryOrbDrift {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(30px, -20px) scale(1.12); }
+    100% { transform: translate(-25px, 25px) scale(0.95); }
+}
+
+/* ----------------------------------------------------
+   11. ACCESSIBILITY: REDUCED MOTION PREFERENCE
+   ---------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .hero-slide-bg {
+        transform: none !important;
+        transition: none !important;
+    }
+    
+    .hero-bg-watermark {
+        animation: none !important;
+        transform: none !important;
+    }
+    
+    .reveal-init {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+    
+    .luxury-preloader {
+        display: none !important;
+    }
+}

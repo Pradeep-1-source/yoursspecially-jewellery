@@ -99,7 +99,10 @@ $businessAddress = getSetting('business_address', 'Boutique Studio, Luxury Distr
 <?php
 $jsFile = dirname(__DIR__) . '/assets/js/main.js';
 $jsVersion = file_exists($jsFile) ? filemtime($jsFile) : '2.2';
+$animJsFile = dirname(__DIR__) . '/assets/js/luxury-animations.js';
+$animJsVersion = file_exists($animJsFile) ? filemtime($animJsFile) : '1.0';
 ?>
 <script src="<?= BASE_URL ?>assets/js/main.js?v=<?= $jsVersion ?>"></script>
+<script src="<?= BASE_URL ?>assets/js/luxury-animations.js?v=<?= $animJsVersion ?>"></script>
 </body>
 </html>

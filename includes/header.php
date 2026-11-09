@@ -49,8 +49,11 @@ try {
     <?php
     $cssFile = dirname(__DIR__) . '/assets/css/style.css';
     $cssVersion = file_exists($cssFile) ? filemtime($cssFile) : '2.3';
+    $animCssFile = dirname(__DIR__) . '/assets/css/animations.css';
+    $animCssVersion = file_exists($animCssFile) ? filemtime($animCssFile) : '1.0';
     ?>
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css?v=<?= $cssVersion ?>">
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/animations.css?v=<?= $animCssVersion ?>">
 
     <!-- Critical Mobile Header Styles to Guarantee Clean Mobile View Across All Devices -->
     <style>
@@ -156,6 +159,24 @@ try {
     </style>
 </head>
 <body>
+
+<!-- Luxury Atelier Brand Preloader -->
+<div id="luxuryLoader" class="luxury-preloader" aria-hidden="true">
+    <div class="luxury-preloader-content">
+        <div class="luxury-preloader-emblem">
+            <div class="preloader-ring"></div>
+            <img src="<?= BASE_URL ?>assets/images/logo.jpeg" alt="YoursSpecially" class="preloader-logo">
+            <span class="preloader-sparkle">✦</span>
+        </div>
+        <div class="preloader-brand">
+            <span class="preloader-title">YoursSpecially</span>
+            <span class="preloader-subtitle">Haute Joaillerie</span>
+        </div>
+        <div class="preloader-bar">
+            <div class="preloader-progress"></div>
+        </div>
+    </div>
+</div>
 
 <!-- Announcement Bar -->
 <?php if (!empty($announcement)): ?>

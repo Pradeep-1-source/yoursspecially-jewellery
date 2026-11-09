@@ -80,23 +80,27 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 
 <!-- 1. DYNAMIC HERO PROMOTIONAL BANNER SYSTEM -->
-<section class="hero-slider-container" aria-label="Hero Promotional Carousel">
+<section class="hero-slider-container has-luxury-sparkles" aria-label="Hero Promotional Carousel">
+    <div class="hero-sparkle-container" aria-hidden="true"></div>
     <div class="hero-slider">
         <?php foreach ($banners as $idx => $banner): ?>
-            <div class="hero-slide <?= ($idx === 0) ? 'active' : '' ?>" style="background-image: url('<?= BASE_URL . e($banner['image']) ?>');">
+            <div class="hero-slide <?= ($idx === 0) ? 'active' : '' ?>">
+                <div class="hero-slide-bg" style="background-image: url('<?= BASE_URL . e($banner['image']) ?>');"></div>
                 <div class="hero-slide-overlay"></div>
+                <div class="hero-bg-watermark" aria-hidden="true">ATELIER</div>
                 <div class="container" style="position: relative; z-index: 2;">
                     <div class="hero-content">
-                        <span class="hero-eyebrow">Haute Joaillerie</span>
-                        <h1 class="hero-title"><?= e($banner['title']) ?></h1>
+                        <span class="hero-eyebrow"><span class="eyebrow-dash"></span>Haute Joaillerie</span>
+                        <h1 class="hero-title" data-original-title="<?= e($banner['title']) ?>"><?= e($banner['title']) ?></h1>
                         <?php if (!empty($banner['subtitle'])): ?>
                             <p class="hero-subtitle"><?= e($banner['subtitle']) ?></p>
                         <?php endif; ?>
                         <div class="hero-btn-group">
-                            <a href="<?= BASE_URL . e($banner['button_link'] ?: 'products.php') ?>" class="btn btn-primary">
-                                <?= e($banner['button_text'] ?: 'Shop Now') ?>
+                            <a href="<?= BASE_URL . e($banner['button_link'] ?: 'products.php') ?>" class="btn btn-primary btn-luxury-primary">
+                                <span><?= e($banner['button_text'] ?: 'Shop Now') ?></span>
+                                <svg class="btn-arrow-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                             </a>
-                            <a href="<?= BASE_URL ?>products.php" class="btn btn-outline-white">Explore Gallery</a>
+                            <a href="<?= BASE_URL ?>products.php" class="btn btn-outline-white btn-luxury-outline">Explore Gallery</a>
                         </div>
                     </div>
                 </div>
@@ -123,7 +127,7 @@ require_once __DIR__ . '/includes/header.php';
 <section class="section-padding">
     <div class="container">
         <div class="text-center">
-            <span class="section-eyebrow">Curated Collections</span>
+            <span class="section-eyebrow"><span class="eyebrow-dash"></span>Curated Collections</span>
             <h2 class="section-title">Shop by Category</h2>
             <p class="section-subtitle">Discover handcrafted artistry sculpted with rose gold romance, sparkling gems, and heritage passion.</p>
         </div>
@@ -159,7 +163,7 @@ require_once __DIR__ . '/includes/header.php';
 <section class="section-padding" style="background: var(--bg-blush-light);">
     <div class="container">
         <div class="text-center">
-            <span class="section-eyebrow">Signature Masterpieces</span>
+            <span class="section-eyebrow"><span class="eyebrow-dash"></span>Signature Masterpieces</span>
             <h2 class="section-title">Featured Creations</h2>
             <p class="section-subtitle">Exquisite pieces hand-selected for their timeless beauty and bespoke craftsmanship.</p>
         </div>
@@ -241,20 +245,23 @@ require_once __DIR__ . '/includes/header.php';
 <?php endif; ?>
 
 <!-- 4. EDITORIAL PROMOTIONAL SHOWCASE -->
-<section class="section-padding promo-editorial-section">
+<section class="section-padding promo-editorial-section has-luxury-sparkles">
     <div class="container">
         <div class="promo-banner-card">
-            <div class="promo-image-side">
+            <div class="promo-image-side reveal-curtain">
                 <img src="<?= BASE_URL ?>assets/images/promo-banner.jpg" alt="The Art of Bespoke Romance">
             </div>
             <div class="promo-content-side">
-                <span class="section-eyebrow">The Atelier Story</span>
+                <span class="section-eyebrow"><span class="eyebrow-dash"></span>The Atelier Story</span>
                 <h2 style="font-size: clamp(2rem, 3.5vw, 2.8rem); margin-bottom: 1.2rem;">The Art of Bespoke Romance</h2>
                 <p style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 2rem;">
                     Every design at YoursSpecially begins as an intimate whisper of affection. We blend the warmth of rose gold with the regal majesty of heritage uncut gems and sparkling zircons to craft jewellery that becomes part of your soul story.
                 </p>
                 <div>
-                    <a href="<?= BASE_URL ?>about.php" class="btn btn-primary">Discover Our Craftsmanship</a>
+                    <a href="<?= BASE_URL ?>about.php" class="btn btn-primary btn-luxury-primary">
+                        <span>Discover Our Craftsmanship</span>
+                        <svg class="btn-arrow-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </a>
                 </div>
             </div>
         </div>
@@ -266,7 +273,7 @@ require_once __DIR__ . '/includes/header.php';
 <section class="section-padding">
     <div class="container">
         <div class="text-center">
-            <span class="section-eyebrow">Fresh in the Boutique</span>
+            <span class="section-eyebrow"><span class="eyebrow-dash"></span>Fresh in the Boutique</span>
             <h2 class="section-title">New Arrivals</h2>
             <p class="section-subtitle">Be the first to adorn yourself with our newest seasonal jewellery releases.</p>
         </div>
@@ -381,7 +388,7 @@ require_once __DIR__ . '/includes/header.php';
 <section class="section-padding" style="background: #fff;">
     <div class="container">
         <div class="text-center" style="margin-bottom: 2.5rem;">
-            <span class="section-eyebrow">Connect With Us</span>
+            <span class="section-eyebrow"><span class="eyebrow-dash"></span>Connect With Us</span>
             <h2 class="section-title">Follow @yours__specially</h2>
             <p class="section-subtitle">Join our community of jewellery connoisseurs. Tag us to be featured in our royal gallery.</p>
         </div>
