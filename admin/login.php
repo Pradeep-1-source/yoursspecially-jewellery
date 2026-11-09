@@ -73,11 +73,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Authenticate Access &rarr;
         </button>
     </form>
-
-    <div style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--admin-border); font-size: 0.78rem; color: var(--admin-muted);">
-        Default Credentials: <code>admin@yoursspecially.com</code> / <code>Admin@123</code><br>
-        <span style="color: var(--admin-secondary);">Remember to change default password after first login!</span>
-    </div>
 </div>
 
 </body>
