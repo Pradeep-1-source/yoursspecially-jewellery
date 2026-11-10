@@ -126,7 +126,7 @@ require_once __DIR__ . '/includes/header.php';
                         <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border-subtle);">
                             <div style="display: flex; align-items: center; gap: 1rem;">
                                 <?php if (!empty($item['main_image'])): ?>
-                                    <img src="<?= BASE_URL . e($item['main_image']) ?>" alt="<?= e($item['product_name']) ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                                    <img src="<?= getProductImageUrl($item['main_image'] ?? '', '', $item['product_name'] ?? '') ?>" alt="<?= e($item['product_name']) ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/prod-neck-1.jpg';">
                                 <?php endif; ?>
                                 <div>
                                     <strong style="color: var(--primary); font-family: var(--font-serif); font-size: 1.05rem; display: block;"><?= e($item['product_name']) ?></strong>

@@ -380,7 +380,7 @@ require_once __DIR__ . '/includes/header.php';
                     <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; max-height: 280px; overflow-y: auto; padding-right: 6px;">
                         <?php foreach ($cartItems as $item): ?>
                             <div style="display: flex; gap: 0.85rem; align-items: center;">
-                                <img src="<?= BASE_URL . e($item['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>" alt="<?= e($item['name']) ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                                <img src="<?= getProductImageUrl($item['main_image'] ?? '', '', $item['name'] ?? '') ?>" alt="<?= e($item['name']) ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle);" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/prod-neck-1.jpg';">
                                 <div style="flex-grow: 1;">
                                     <div style="font-size: 0.88rem; font-weight: 600; color: var(--primary);"><?= e($item['name']) ?></div>
                                     <?php if (!empty($item['variant_info'])): ?>

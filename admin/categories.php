@@ -203,7 +203,7 @@ $categories = $db->query("SELECT c.*, (SELECT COUNT(*) FROM products WHERE categ
                                     <input type="number" name="display_orders[<?= $cat['id'] ?>]" value="<?= (int)$cat['display_order'] ?>" style="width: 58px; padding: 4px 6px; border: 1px solid var(--admin-border); border-radius: 4px; text-align: center; font-weight: 600;" min="0">
                                 </td>
                                 <td style="width: 50px;">
-                                    <img src="<?= BASE_URL . e($cat['image'] ?: 'assets/images/cat-necklaces.jpg') ?>" alt="<?= e($cat['name']) ?>" style="width: 44px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border);">
+                                    <img src="<?= getCategoryImageUrl($cat['image'] ?? '', $cat['slug'] ?? '', $cat['name'] ?? '') ?>" alt="<?= e($cat['name']) ?>" style="width: 44px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border);" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/cat-necklaces.jpg';">
                                 </td>
                                 <td><strong style="color: var(--admin-primary);"><?= e($cat['name']) ?></strong></td>
                                 <td style="font-size: 0.8rem; color: var(--admin-muted);"><code><?= e($cat['slug']) ?></code></td>

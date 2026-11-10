@@ -17,12 +17,9 @@
 </IfModule>
 
 # 2. Block Direct Execution of Scripts in Uploads Folder (Exploit Defense)
-<Directory "assets/uploads">
-    <FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|htm|shtml|sh|cgi)$">
-        Order Deny,Allow
-        Deny from all
-    </FilesMatch>
-</Directory>
+<IfModule mod_rewrite.c>
+    RewriteRule ^assets/uploads/.*\.php$ - [F,L,NC]
+</IfModule>
 
 # 3. Security HTTP Headers
 <IfModule mod_headers.c>

@@ -137,7 +137,7 @@ require_once __DIR__ . '/includes/header.php';
                 <?php foreach ($categories as $cat): ?>
                     <a href="<?= BASE_URL ?>products.php?category=<?= urlencode($cat['slug']) ?>" class="category-card">
                         <div class="category-img-box">
-                            <img src="<?= BASE_URL . e($cat['image'] ?: 'assets/images/cat-necklaces.jpg') ?>" alt="<?= e($cat['name']) ?>" loading="lazy">
+                            <img src="<?= getCategoryImageUrl($cat['image'] ?? '', $cat['slug'] ?? '', $cat['name'] ?? '') ?>" alt="<?= e($cat['name']) ?>" loading="lazy" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/cat-necklaces.jpg';">
                             <div class="category-overlay">
                                 <h3 class="category-title"><?= e($cat['name']) ?></h3>
                                 <span class="category-explore">Explore Collection &rarr;</span>
@@ -176,7 +176,7 @@ require_once __DIR__ . '/includes/header.php';
                 <div class="product-card">
                     <div class="product-thumb-wrap">
                         <a href="<?= BASE_URL ?>product.php?slug=<?= urlencode($prod['slug']) ?>">
-                            <img src="<?= BASE_URL . e($prod['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>" alt="<?= e($prod['name']) ?>" class="product-thumb" loading="lazy">
+                            <img src="<?= getProductImageUrl($prod['main_image'] ?? '', $prod['category_name'] ?? '', $prod['name'] ?? '') ?>" alt="<?= e($prod['name']) ?>" class="product-thumb" loading="lazy" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/prod-neck-1.jpg';">
                         </a>
 
                         <?php if ($hasDiscount): ?>
@@ -192,7 +192,7 @@ require_once __DIR__ . '/includes/header.php';
                                     data-slug="<?= e($prod['slug']) ?>"
                                     data-price="<?= e($prod['price']) ?>"
                                     data-sale-price="<?= e($prod['sale_price'] ?? '') ?>"
-                                    data-image="<?= e($prod['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>"
+                                    data-image="<?= e(getProductImageUrl($prod['main_image'] ?? '', $prod['category_name'] ?? '', $prod['name'] ?? '')) ?>"
                                     data-sku="<?= e($prod['sku']) ?>"
                                     data-in-stock="<?= ($prod['stock'] > 0) ? '1' : '0' ?>"
                                     title="Save to Wishlist" aria-label="Save to Wishlist">
@@ -285,7 +285,7 @@ require_once __DIR__ . '/includes/header.php';
                 <div class="product-card">
                     <div class="product-thumb-wrap">
                         <a href="<?= BASE_URL ?>product.php?slug=<?= urlencode($prod['slug']) ?>">
-                            <img src="<?= BASE_URL . e($prod['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>" alt="<?= e($prod['name']) ?>" class="product-thumb" loading="lazy">
+                            <img src="<?= getProductImageUrl($prod['main_image'] ?? '', $prod['category_name'] ?? '', $prod['name'] ?? '') ?>" alt="<?= e($prod['name']) ?>" class="product-thumb" loading="lazy" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/prod-neck-1.jpg';">
                         </a>
                         <span class="product-badge" style="background: var(--gold);">New Arrival</span>
                         <div class="product-actions-floating">
@@ -295,7 +295,7 @@ require_once __DIR__ . '/includes/header.php';
                                     data-slug="<?= e($prod['slug']) ?>"
                                     data-price="<?= e($prod['price']) ?>"
                                     data-sale-price="<?= e($prod['sale_price'] ?? '') ?>"
-                                    data-image="<?= e($prod['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>"
+                                    data-image="<?= e(getProductImageUrl($prod['main_image'] ?? '', $prod['category_name'] ?? '', $prod['name'] ?? '')) ?>"
                                     data-sku="<?= e($prod['sku']) ?>"
                                     data-in-stock="<?= ($prod['stock'] > 0) ? '1' : '0' ?>"
                                     title="Save to Wishlist" aria-label="Save to Wishlist">

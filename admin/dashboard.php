@@ -193,7 +193,7 @@ try {
                     <?php foreach ($lowStockItems as $lsi): ?>
                         <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid var(--admin-border);">
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                <img src="<?= BASE_URL . e($lsi['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>" alt="<?= e($lsi['name']) ?>" style="width: 42px; height: 42px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border);">
+                                <img src="<?= getProductImageUrl($lsi['main_image'] ?? '', '', $lsi['name'] ?? '') ?>" alt="<?= e($lsi['name']) ?>" style="width: 42px; height: 42px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border);" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/prod-neck-1.jpg';">
                                 <div>
                                     <div style="font-size: 0.88rem; font-weight: 600; color: var(--admin-primary);"><?= e($lsi['name']) ?></div>
                                     <div style="font-size: 0.75rem; color: var(--admin-muted);">SKU: <?= e($lsi['sku']) ?></div>

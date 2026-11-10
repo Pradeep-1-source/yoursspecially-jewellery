@@ -223,7 +223,7 @@ try {
                                 </td>
                                 <td>
                                     <div style="display: flex; align-items: center; gap: 10px;">
-                                        <img src="<?= BASE_URL . e($p['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>" alt="<?= e($p['name']) ?>" style="width: 44px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border); flex-shrink: 0;">
+                                        <img src="<?= getProductImageUrl($p['main_image'] ?? '', $p['category_name'] ?? '', $p['name'] ?? '') ?>" alt="<?= e($p['name']) ?>" style="width: 44px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border); flex-shrink: 0;" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/prod-neck-1.jpg';">
                                         <div>
                                             <strong style="color: var(--admin-primary); display: block; font-size: 0.92rem;"><?= e($p['name']) ?></strong>
                                             <div style="font-size: 0.75rem; color: var(--admin-muted);">SKU: <?= e($p['sku']) ?></div>

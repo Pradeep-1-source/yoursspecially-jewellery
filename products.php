@@ -374,7 +374,7 @@ require_once __DIR__ . '/includes/header.php';
                         <div class="product-card">
                             <div class="product-thumb-wrap">
                                 <a href="<?= BASE_URL ?>product.php?slug=<?= urlencode($prod['slug']) ?>">
-                                    <img src="<?= BASE_URL . e($prod['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>" alt="<?= e($prod['name']) ?>" class="product-thumb" loading="lazy">
+                                    <img src="<?= getProductImageUrl($prod['main_image'] ?? '', $prod['category_name'] ?? '', $prod['name'] ?? '') ?>" alt="<?= e($prod['name']) ?>" class="product-thumb" loading="lazy" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/prod-neck-1.jpg';">
                                 </a>
 
                                 <?php if ($hasDiscount): ?>
@@ -392,7 +392,7 @@ require_once __DIR__ . '/includes/header.php';
                                             data-slug="<?= e($prod['slug']) ?>"
                                             data-price="<?= e($prod['price']) ?>"
                                             data-sale-price="<?= e($prod['sale_price'] ?? '') ?>"
-                                            data-image="<?= e($prod['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>"
+                                            data-image="<?= e(getProductImageUrl($prod['main_image'] ?? '', $prod['category_name'] ?? '', $prod['name'] ?? '')) ?>"
                                             data-sku="<?= e($prod['sku']) ?>"
                                             data-in-stock="<?= ($prod['stock'] > 0) ? '1' : '0' ?>"
                                             title="Save to Wishlist" aria-label="Save to Wishlist">

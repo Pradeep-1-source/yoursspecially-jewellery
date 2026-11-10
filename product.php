@@ -145,14 +145,17 @@ require_once __DIR__ . '/includes/header.php';
         <!-- Gallery Side -->
         <div class="product-detail-gallery">
             <div class="gallery-main" id="galleryContainer">
-                <img src="<?= BASE_URL . e($galleryImages[0]) ?>" alt="<?= e($product['name']) ?>" id="mainGalleryImg">
+                <?php $mainImgUrl = getProductImageUrl($galleryImages[0] ?? '', $product['category_name'] ?? '', $product['name']); ?>
+                <img src="<?= e($mainImgUrl) ?>" alt="<?= e($product['name']) ?>" id="mainGalleryImg" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/prod-neck-1.jpg';">
             </div>
 
             <?php if (count($galleryImages) > 1): ?>
                 <div class="gallery-thumbs">
-                    <?php foreach ($galleryImages as $idx => $img): ?>
-                        <div class="thumb-item <?= ($idx === 0) ? 'active' : '' ?>" data-src="<?= BASE_URL . e($img) ?>">
-                            <img src="<?= BASE_URL . e($img) ?>" alt="<?= e($product['name']) ?> thumbnail <?= $idx + 1 ?>">
+                    <?php foreach ($galleryImages as $idx => $img): 
+                        $thumbUrl = getProductImageUrl($img, $product['category_name'] ?? '', $product['name']);
+                    ?>
+                        <div class="thumb-item <?= ($idx === 0) ? 'active' : '' ?>" data-src="<?= e($thumbUrl) ?>">
+                            <img src="<?= e($thumbUrl) ?>" alt="<?= e($product['name']) ?> thumbnail <?= $idx + 1 ?>" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/prod-neck-1.jpg';">
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -307,7 +310,7 @@ require_once __DIR__ . '/includes/header.php';
                     <div class="product-card">
                         <div class="product-thumb-wrap">
                             <a href="<?= BASE_URL ?>product.php?slug=<?= urlencode($rel['slug']) ?>">
-                                <img src="<?= BASE_URL . e($rel['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>" alt="<?= e($rel['name']) ?>" class="product-thumb" loading="lazy">
+                                <img src="<?= getProductImageUrl($rel['main_image'] ?? '', $rel['category_name'] ?? '', $rel['name']) ?>" alt="<?= e($rel['name']) ?>" class="product-thumb" loading="lazy" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/prod-neck-1.jpg';">
                             </a>
                         </div>
                         <div class="product-info">

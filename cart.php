@@ -120,7 +120,7 @@ require_once __DIR__ . '/includes/header.php';
                                 <td>
                                     <div style="display: flex; align-items: center; gap: 1rem;">
                                         <a href="<?= BASE_URL ?>product.php?slug=<?= urlencode($item['slug']) ?>" style="flex-shrink: 0;">
-                                            <img src="<?= BASE_URL . e($item['main_image'] ?: 'assets/images/prod-neck-1.jpg') ?>" alt="<?= e($item['name']) ?>" style="width: 70px; height: 70px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                                            <img src="<?= getProductImageUrl($item['main_image'] ?? '', '', $item['name'] ?? '') ?>" alt="<?= e($item['name']) ?>" style="width: 70px; height: 70px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle);" onerror="this.onerror=null; this.src='<?= BASE_URL ?>assets/images/prod-neck-1.jpg';">
                                         </a>
                                         <div>
                                             <a href="<?= BASE_URL ?>product.php?slug=<?= urlencode($item['slug']) ?>" style="font-weight: 600; color: var(--primary); font-family: var(--font-serif); font-size: 1.05rem; display: block;">
