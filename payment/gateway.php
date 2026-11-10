@@ -1,24 +1,24 @@
 <?php
 /**
  * YoursSpeciallyJewellery - Payment Gateway Integration Layer
- * Ready for Indian Gateways (Razorpay / Cashfree / PayU / PhonePe)
+ * Razorpay Standard Web Checkout Integration (API v1)
  */
 
 require_once __DIR__ . '/../config/config.php';
 
 // ==========================================================
-// PAYMENT GATEWAY CONFIGURATION PLACEHOLDERS
-// Insert your live/sandbox credentials when you register your gateway
+// RAZORPAY ENVIRONMENT CREDENTIALS
+// Loaded securely from .env or system environment variables
 // ==========================================================
-define('PAYMENT_GATEWAY_PROVIDER', getenv('PAYMENT_PROVIDER') ?: 'razorpay'); // 'razorpay' or 'cashfree'
+$envKeyId = getenv('RAZORPAY_KEY_ID') ?: ($_ENV['RAZORPAY_KEY_ID'] ?? ($_SERVER['RAZORPAY_KEY_ID'] ?? ''));
+$envKeySecret = getenv('RAZORPAY_KEY_SECRET') ?: ($_ENV['RAZORPAY_KEY_SECRET'] ?? ($_SERVER['RAZORPAY_KEY_SECRET'] ?? ''));
 
-// Razorpay Credentials (https://dashboard.razorpay.com/)
-define('RAZORPAY_KEY_ID', getenv('RAZORPAY_KEY_ID') ?: 'rzp_test_YOUR_KEY_ID_HERE');
-define('RAZORPAY_KEY_SECRET', getenv('RAZORPAY_KEY_SECRET') ?: 'YOUR_RAZORPAY_SECRET_HERE');
-
-// Cashfree Credentials (https://merchant.cashfree.com/)
-define('CASHFREE_APP_ID', getenv('CASHFREE_APP_ID') ?: 'YOUR_CASHFREE_APP_ID_HERE');
-define('CASHFREE_SECRET_KEY', getenv('CASHFREE_SECRET_KEY') ?: 'YOUR_CASHFREE_SECRET_KEY_HERE');
+if (!defined('RAZORPAY_KEY_ID')) {
+    define('RAZORPAY_KEY_ID', $envKeyId);
+}
+if (!defined('RAZORPAY_KEY_SECRET')) {
+    define('RAZORPAY_KEY_SECRET', $envKeySecret);
+}
 
 /**
  * Interface defining standard payment provider contract
@@ -30,100 +30,197 @@ interface PaymentGatewayInterface {
 }
 
 /**
- * Razorpay Implementation Layer
+ * Razorpay Standard Checkout Implementation
  */
 class RazorpayGateway implements PaymentGatewayInterface {
     private string $keyId;
     private string $keySecret;
+    private string $apiBaseUrl = 'https://api.razorpay.com/v1';
 
-    public function __construct() {
-        $this->keyId = RAZORPAY_KEY_ID;
-        $this->keySecret = RAZORPAY_KEY_SECRET;
+    public function __construct(?string $keyId = null, ?string $keySecret = null) {
+        $this->keyId = $keyId ?: RAZORPAY_KEY_ID;
+        $this->keySecret = $keySecret ?: RAZORPAY_KEY_SECRET;
     }
 
-    public function createGatewayOrder(array $orderData): array {
-        // Prepare order payload (Amount in paise for INR: ₹1 = 100 paise)
-        $amountInPaise = (int)round($orderData['total_amount'] * 100);
+    public function getKeyId(): string {
+        return $this->keyId;
+    }
 
-        // If credentials are placeholders, provide a seamless mock gateway response for testing
-        if (str_contains($this->keyId, 'YOUR_KEY_ID') || str_contains($this->keyId, 'rzp_test_YOUR')) {
+    /**
+     * Creates an order with Razorpay Orders API: POST https://api.razorpay.com/v1/orders
+     *
+     * @param array $orderData Must contain amount (in paise or total_amount) and receipt
+     * @return array Array with success, order_id, amount, currency, or error details
+     */
+    public function createGatewayOrder(array $orderData): array {
+        // Calculate amount in paise (1 INR = 100 paise)
+        if (isset($orderData['amount']) && is_numeric($orderData['amount'])) {
+            $amountInPaise = (int)$orderData['amount'];
+        } elseif (isset($orderData['total_amount']) && is_numeric($orderData['total_amount'])) {
+            $amountInPaise = (int)round((float)$orderData['total_amount'] * 100);
+        } else {
             return [
-                'success' => true,
-                'gateway_order_id' => 'order_mock_' . bin2hex(random_bytes(6)),
-                'amount' => $amountInPaise,
-                'currency' => 'INR',
-                'key_id' => $this->keyId,
-                'is_mock' => true
+                'success' => false,
+                'status_code' => 400,
+                'message' => 'Missing or invalid amount.'
             ];
         }
 
-        // Live API call to Razorpay: https://api.razorpay.com/v1/orders
-        $ch = curl_init('https://api.razorpay.com/v1/orders');
+        // Validate minimum amount (Minimum 100 paise = ₹1.00)
+        if ($amountInPaise < 100) {
+            return [
+                'success' => false,
+                'status_code' => 400,
+                'message' => 'Amount must be at least 100 paise (₹1.00).'
+            ];
+        }
+
+        $currency = strtoupper($orderData['currency'] ?? 'INR');
+        $receipt = substr((string)($orderData['receipt'] ?? $orderData['order_number'] ?? ('YSJ-' . time())), 0, 40);
+
+        // Check if API credentials are configured
+        if (empty($this->keyId) || empty($this->keySecret) || str_contains($this->keyId, 'YOUR_KEY_ID')) {
+            return [
+                'success' => false,
+                'status_code' => 401,
+                'message' => 'Razorpay API credentials not configured in .env'
+            ];
+        }
+
+        // Prepare Razorpay API request payload
+        $payload = [
+            'amount' => $amountInPaise,
+            'currency' => $currency,
+            'receipt' => $receipt,
+            'notes' => [
+                'platform' => 'YoursSpecially Jewellery',
+                'customer_name' => $orderData['customer_name'] ?? 'Boutique Customer',
+                'customer_email' => $orderData['customer_email'] ?? ''
+            ]
+        ];
+
+        // Call Razorpay API: POST https://api.razorpay.com/v1/orders
+        $ch = curl_init($this->apiBaseUrl . '/orders');
         curl_setopt($ch, CURLOPT_USERPWD, $this->keyId . ':' . $this->keySecret);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-            'amount' => $amountInPaise,
-            'currency' => 'INR',
-            'receipt' => $orderData['order_number'],
-            'notes' => [
-                'customer_name' => $orderData['customer_name'],
-                'customer_email' => $orderData['customer_email']
-            ]
-        ]));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Accept: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        // SSL compatibility for local development environments without CA bundle
+        $isLocal = (
+            in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1']) ||
+            strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false ||
+            php_sapi_name() === 'cli'
+        );
+        if ($isLocal) {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        } else {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        }
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
-        $result = json_decode($response, true);
-        if ($httpCode === 200 && isset($result['id'])) {
+        if ($response === false || !empty($curlError)) {
+            error_log("Razorpay cURL Connection Error: " . $curlError);
             return [
-                'success' => true,
-                'gateway_order_id' => $result['id'],
-                'amount' => $amountInPaise,
-                'currency' => 'INR',
-                'key_id' => $this->keyId,
-                'is_mock' => false
+                'success' => false,
+                'status_code' => 500,
+                'message' => 'Unable to connect to Razorpay payment gateway: ' . $curlError
             ];
         }
 
-        error_log("Razorpay Order Creation Failed: " . $response);
+        $result = json_decode($response, true);
+
+        // Handle HTTP 401 Authentication Failure
+        if ($httpCode === 401) {
+            error_log("Razorpay Authentication Error (401): " . $response);
+            return [
+                'success' => false,
+                'status_code' => 401,
+                'message' => 'Razorpay authentication failed. Please verify RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env.'
+            ];
+        }
+
+        // Success: Razorpay order created
+        if ($httpCode === 200 && isset($result['id'])) {
+            return [
+                'success' => true,
+                'order_id' => $result['id'],
+                'amount' => (int)$result['amount'],
+                'currency' => $result['currency'],
+                'receipt' => $result['receipt'] ?? $receipt,
+                'key_id' => $this->keyId,
+                'status_code' => 200
+            ];
+        }
+
+        // Razorpay API returned error
+        $errorMsg = $result['error']['description'] ?? ($result['error']['code'] ?? 'Failed to create Razorpay order.');
+        error_log("Razorpay Order API Error ($httpCode): " . $response);
         return [
             'success' => false,
-            'message' => $result['error']['description'] ?? 'Failed to initialize payment gateway order.'
+            'status_code' => $httpCode ?: 500,
+            'message' => $errorMsg,
+            'raw_error' => $result['error'] ?? null
         ];
     }
 
+    /**
+     * Verifies payment signature using HMAC SHA-256
+     * Expected signature = HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
+     *
+     * @param array $paymentData Must contain razorpay_order_id, razorpay_payment_id, razorpay_signature
+     * @return bool True if signature matches, false otherwise
+     */
     public function verifyPayment(array $paymentData): bool {
-        $razorpayOrderId = $paymentData['razorpay_order_id'] ?? '';
-        $razorpayPaymentId = $paymentData['razorpay_payment_id'] ?? '';
-        $razorpaySignature = $paymentData['razorpay_signature'] ?? '';
+        $razorpayOrderId = trim($paymentData['razorpay_order_id'] ?? '');
+        $razorpayPaymentId = trim($paymentData['razorpay_payment_id'] ?? '');
+        $razorpaySignature = trim($paymentData['razorpay_signature'] ?? '');
 
-        if (empty($razorpayOrderId) || empty($razorpayPaymentId)) {
+        if (empty($razorpayOrderId) || empty($razorpayPaymentId) || empty($razorpaySignature)) {
             return false;
         }
 
-        // In test mode without live keys
-        if (str_contains($this->keyId, 'YOUR_KEY_ID') || str_contains($this->keyId, 'rzp_test_YOUR')) {
-            return true;
+        if (empty($this->keySecret)) {
+            error_log("Razorpay verifyPayment error: Key secret is not configured.");
+            return false;
         }
 
-        // Cryptographic HMAC SHA256 signature verification
+        // Compute HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
         $expectedSignature = hash_hmac('sha256', $razorpayOrderId . '|' . $razorpayPaymentId, $this->keySecret);
+
+        // Constant-time string comparison to prevent timing attacks
         return hash_equals($expectedSignature, $razorpaySignature);
     }
 
+    /**
+     * Verifies webhook signature
+     */
     public function verifyWebhook(string $payload, string $signature): bool {
+        if (empty($this->keySecret) || empty($signature)) {
+            return false;
+        }
         $expectedSignature = hash_hmac('sha256', $payload, $this->keySecret);
         return hash_equals($expectedSignature, $signature);
     }
 }
 
 /**
- * Factory to return configured gateway handler
+ * Returns singleton or instance of configured payment gateway
  */
 function getPaymentGateway(): PaymentGatewayInterface {
-    return new RazorpayGateway();
+    static $gateway = null;
+    if ($gateway === null) {
+        $gateway = new RazorpayGateway();
+    }
+    return $gateway;
 }

@@ -14,6 +14,12 @@
     RewriteRule ^database\.sql$ - [F,L,NC]
     RewriteRule ^\.env$ - [F,L,NC]
     RewriteRule ^README.*\.md$ - [F,L,NC]
+
+    # API & Payment Gateway REST Endpoints (supports extensionless routes)
+    RewriteRule ^api/create-order/?$ api/create-order.php [L,QSA]
+    RewriteRule ^api/verify-payment/?$ api/verify-payment.php [L,QSA]
+    RewriteRule ^payment/create-order/?$ payment/create-order.php [L,QSA]
+    RewriteRule ^payment/verify-payment/?$ payment/verify-payment.php [L,QSA]
 </IfModule>
 
 # 2. Block Direct Execution of Scripts in Uploads Folder (Exploit Defense)

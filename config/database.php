@@ -365,6 +365,14 @@ function autoMigrateDatabaseIfNeeded(PDO $pdo): void {
             }
         } catch (Throwable $e) {}
 
+        // 7. Ensure orders table has transaction_id column for payment gateways
+        try {
+            $chkT = $pdo->query("SHOW COLUMNS FROM `orders` LIKE 'transaction_id'");
+            if (!$chkT->fetch()) {
+                $pdo->exec("ALTER TABLE `orders` ADD COLUMN `transaction_id` VARCHAR(100) DEFAULT NULL AFTER `payment_method`");
+            }
+        } catch (Throwable $e) {}
+
     } catch (Throwable $e) {
         error_log("Schema auto-migration notice: " . $e->getMessage());
     }

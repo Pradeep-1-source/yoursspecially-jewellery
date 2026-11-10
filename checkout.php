@@ -226,36 +226,266 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'customer_email' => $email
                 ]);
 
+                $keyId = $gateway->getKeyId();
+                $razorpayOrderId = $gatewayOrder['order_id'] ?? '';
+                $orderAmountInPaise = (int)($gatewayOrder['amount'] ?? round($grandTotal * 100));
+
                 // Render payment gateway bridge
                 require_once __DIR__ . '/includes/header.php';
                 ?>
-                <div class="container section-padding" style="max-width: 600px; text-align: center;">
-                    <div style="background: #fff; padding: 3rem 2rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); box-shadow: var(--shadow-card);">
-                        <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--bg-blush); color: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
-                            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                <div class="container section-padding" style="max-width: 620px; text-align: center; margin: 0 auto; padding-top: 3rem; padding-bottom: 5rem;">
+                    <div style="background: #fff; padding: 3rem 2.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); box-shadow: var(--shadow-card); position: relative; overflow: hidden;">
+                        <!-- Top Accent Banner -->
+                        <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #5B1B36, #C9654E, #E6C280);"></div>
+
+                        <div style="width: 68px; height: 68px; border-radius: 50%; background: var(--bg-blush); color: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; border: 1px solid var(--border-subtle);">
+                            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                                <line x1="2" y1="10" x2="22" y2="10"></line>
+                                <circle cx="7" cy="15" r="1"></circle>
+                            </svg>
                         </div>
-                        <h2 style="margin-bottom: 0.5rem;">Payment Gateway Gateway</h2>
-                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Order Number: <strong><?= e($orderNumber) ?></strong><br>Amount to Pay: <strong><?= formatPrice($grandTotal) ?></strong></p>
 
-                        <div style="background: var(--bg-cream); border: 1px dashed var(--border-subtle); border-radius: 6px; padding: 1.25rem; font-size: 0.88rem; margin-bottom: 2rem; text-align: left;">
-                            <strong style="color: var(--primary);">Secure Integration Note:</strong><br>
-                            This payment layer is pre-configured with the standard Razorpay / Cashfree HMAC verification workflow. Click below to simulate or execute payment verification.
+                        <h2 style="font-size: 1.8rem; color: var(--primary); margin-bottom: 0.5rem; font-family: 'Playfair Display', serif;">Secure Checkout Payment</h2>
+                        <p style="color: var(--text-secondary); margin-bottom: 1.75rem; font-size: 0.95rem;">
+                            Order: <strong style="color: var(--primary);"><?= e($orderNumber) ?></strong> &bull; Amount: <strong style="color: var(--primary);"><?= formatPrice($grandTotal) ?></strong>
+                        </p>
+
+                        <!-- Live Status / Alert Box -->
+                        <div id="rzp-alert" style="display: none; padding: 1rem 1.25rem; border-radius: 8px; margin-bottom: 1.75rem; text-align: left; font-size: 0.9rem; line-height: 1.5;"></div>
+
+                        <div style="background: var(--bg-cream); border: 1px solid #F5E6E0; border-radius: 8px; padding: 1.25rem 1.5rem; font-size: 0.88rem; margin-bottom: 2rem; text-align: left;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--text-secondary);">
+                                <span>Boutique Order:</span>
+                                <strong style="color: var(--primary);"><?= e($orderNumber) ?></strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--text-secondary);">
+                                <span>Customer Name:</span>
+                                <span style="font-weight: 500; color: #333;"><?= e($name) ?></span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--text-secondary);">
+                                <span>Customer Email:</span>
+                                <span style="font-weight: 500; color: #333;"><?= e($email) ?></span>
+                            </div>
+                            <div style="border-top: 1px dashed var(--border-subtle); margin-top: 0.75rem; padding-top: 0.75rem; display: flex; justify-content: space-between; font-size: 1rem;">
+                                <strong style="color: var(--primary);">Total Payable:</strong>
+                                <strong style="color: var(--primary); font-size: 1.15rem;"><?= formatPrice($grandTotal) ?></strong>
+                            </div>
                         </div>
 
-                        <form method="POST" action="<?= BASE_URL ?>payment/verify-payment.php">
-                            <input type="hidden" name="order_id" value="<?= $newOrderId ?>">
-                            <input type="hidden" name="razorpay_order_id" value="<?= e($gatewayOrder['gateway_order_id'] ?? 'mock_order_123') ?>">
-                            <input type="hidden" name="razorpay_payment_id" value="pay_<?= bin2hex(random_bytes(8)) ?>">
-                            <input type="hidden" name="razorpay_signature" value="sig_<?= bin2hex(random_bytes(16)) ?>">
+                        <!-- Razorpay Checkout Trigger Button -->
+                        <button id="rzp-pay-button" type="button" class="btn btn-primary btn-block" style="padding: 1.05rem; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 1rem; box-shadow: 0 4px 14px rgba(91, 27, 54, 0.25);">
+                            <span id="rzp-button-text">Pay Now with Razorpay (<?= formatPrice($grandTotal) ?>) &rarr;</span>
+                        </button>
 
-                            <button type="submit" class="btn btn-primary btn-block" style="margin-bottom: 1rem;">
-                                Complete Payment (<?= formatPrice($grandTotal) ?>) &rarr;
-                            </button>
-                        </form>
+                        <!-- Fallback Form in case JS is disabled -->
+                        <noscript>
+                            <form method="POST" action="<?= BASE_URL ?>payment/verify-payment.php" style="margin-top: 1rem;">
+                                <input type="hidden" name="order_id" value="<?= $newOrderId ?>">
+                                <input type="hidden" name="razorpay_order_id" value="<?= e($razorpayOrderId) ?>">
+                                <button type="submit" class="btn btn-secondary btn-block">Verify Payment Manually</button>
+                            </form>
+                        </noscript>
 
-                        <a href="<?= BASE_URL ?>cart.php" style="font-size: 0.85rem; color: var(--text-muted);">Cancel and return to bag</a>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 1.5rem; margin-bottom: 1.5rem; font-size: 0.78rem; color: var(--text-muted);">
+                            <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                256-Bit SSL Secured
+                            </span>
+                            <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                Instant Confirmation
+                            </span>
+                            <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                                UPI, Cards & NetBanking
+                            </span>
+                        </div>
+
+                        <a href="<?= BASE_URL ?>cart.php" style="font-size: 0.85rem; color: var(--text-muted); text-decoration: underline;">
+                            Cancel and return to shopping bag
+                        </a>
                     </div>
                 </div>
+
+                <!-- Razorpay Standard Checkout SDK -->
+                <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+                <script>
+                (function () {
+                    const payBtn = document.getElementById('rzp-pay-button');
+                    const btnText = document.getElementById('rzp-button-text');
+                    const alertBox = document.getElementById('rzp-alert');
+
+                    const config = {
+                        keyId: <?= json_encode($keyId) ?>,
+                        orderId: <?= json_encode($razorpayOrderId) ?>,
+                        amount: <?= $orderAmountInPaise ?>,
+                        currency: 'INR',
+                        storeOrderId: <?= (int)$newOrderId ?>,
+                        orderNumber: <?= json_encode($orderNumber) ?>,
+                        grandTotalFormatted: <?= json_encode(formatPrice($grandTotal)) ?>,
+                        customerName: <?= json_encode($name) ?>,
+                        customerEmail: <?= json_encode($email) ?>,
+                        customerPhone: <?= json_encode($phone) ?>,
+                        verifyUrl: <?= json_encode(BASE_URL . 'api/verify-payment.php') ?>,
+                        createOrderUrl: <?= json_encode(BASE_URL . 'api/create-order.php') ?>,
+                        successUrl: <?= json_encode(BASE_URL . 'order-success.php?order=' . urlencode($orderNumber)) ?>
+                    };
+
+                    function showAlert(message, type) {
+                        alertBox.style.display = 'block';
+                        if (type === 'error') {
+                            alertBox.style.background = '#FDF2F2';
+                            alertBox.style.border = '1px solid #F8B4B4';
+                            alertBox.style.color = '#9B1C1C';
+                        } else if (type === 'success') {
+                            alertBox.style.background = '#F0FDF4';
+                            alertBox.style.border = '1px solid #BBF7D0';
+                            alertBox.style.color = '#166534';
+                        } else {
+                            alertBox.style.background = '#EFF6FF';
+                            alertBox.style.border = '1px solid #BFDBFE';
+                            alertBox.style.color = '#1E40AF';
+                        }
+                        alertBox.innerHTML = message;
+                    }
+
+                    function resetButton(label) {
+                        payBtn.disabled = false;
+                        btnText.textContent = label || ('Pay Now with Razorpay (' + config.grandTotalFormatted + ') →');
+                    }
+
+                    function setLoading(label) {
+                        payBtn.disabled = true;
+                        btnText.textContent = label;
+                    }
+
+                    // Open Razorpay Standard Checkout
+                    async function launchRazorpay() {
+                        setLoading('Connecting to Razorpay...');
+
+                        try {
+                            let activeOrderId = config.orderId;
+
+                            // If order was not pre-generated on server, generate it now via API
+                            if (!activeOrderId) {
+                                const orderRes = await fetch(config.createOrderUrl, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        order_id: config.storeOrderId,
+                                        amount: config.amount,
+                                        currency: config.currency,
+                                        receipt: config.orderNumber
+                                    })
+                                });
+
+                                const orderData = await orderRes.json();
+                                if (!orderRes.ok || !orderData.success) {
+                                    throw new Error(orderData.message || 'Unable to initialize order with Razorpay.');
+                                }
+                                activeOrderId = orderData.order_id;
+                                config.orderId = activeOrderId;
+                                if (orderData.key_id) config.keyId = orderData.key_id;
+                            }
+
+                            const options = {
+                                key: config.keyId,
+                                amount: config.amount,
+                                currency: config.currency,
+                                name: 'YoursSpecially Jewellery',
+                                description: 'Order ' + config.orderNumber,
+                                image: '<?= BASE_URL ?>assets/images/logo.png',
+                                order_id: activeOrderId,
+                                prefill: {
+                                    name: config.customerName,
+                                    email: config.customerEmail,
+                                    contact: config.customerPhone
+                                },
+                                theme: {
+                                    color: '#5B1B36'
+                                },
+                                modal: {
+                                    ondismiss: function () {
+                                        showAlert('Payment was cancelled. You can retry anytime by clicking the button below.', 'info');
+                                        resetButton('Retry Payment (' + config.grandTotalFormatted + ') →');
+                                    }
+                                },
+                                handler: function (response) {
+                                    // STEP 3: Send razorpay_payment_id, razorpay_order_id, razorpay_signature to verify endpoint
+                                    setLoading('Verifying Payment Signature...');
+                                    verifyPayment(response);
+                                }
+                            };
+
+                            const rzpInstance = new Razorpay(options);
+
+                            rzpInstance.on('payment.failed', function (resp) {
+                                console.error('Razorpay payment failure:', resp.error);
+                                const errDesc = (resp.error && resp.error.description) ? resp.error.description : 'Transaction was not completed.';
+                                showAlert('<strong>Payment Unsuccessful:</strong> ' + errDesc, 'error');
+                                resetButton('Retry Payment (' + config.grandTotalFormatted + ') →');
+                            });
+
+                            rzpInstance.open();
+                            resetButton();
+                        } catch (err) {
+                            console.error('Launch Razorpay Error:', err);
+                            showAlert('<strong>Checkout Error:</strong> ' + (err.message || 'Unable to open payment modal.'), 'error');
+                            resetButton('Try Again (' + config.grandTotalFormatted + ') →');
+                        }
+                    }
+
+                    // STEP 3: Signature verification call
+                    async function verifyPayment(paymentResult) {
+                        try {
+                            const verifyRes = await fetch(config.verifyUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    order_id: config.storeOrderId,
+                                    razorpay_order_id: paymentResult.razorpay_order_id,
+                                    razorpay_payment_id: paymentResult.razorpay_payment_id,
+                                    razorpay_signature: paymentResult.razorpay_signature
+                                })
+                            });
+
+                            const verifyData = await verifyRes.json().catch(() => ({}));
+
+                            if (verifyRes.ok && verifyData.success) {
+                                showAlert('✨ Payment verified successfully! Redirecting to confirmation...', 'success');
+                                setTimeout(function () {
+                                    window.location.href = verifyData.redirect_url || config.successUrl;
+                                }, 600);
+                            } else {
+                                const msg = verifyData.message || 'Signature verification failed. Payment was not recorded as paid.';
+                                showAlert('<strong>Verification Failed:</strong> ' + msg, 'error');
+                                resetButton('Retry Payment (' + config.grandTotalFormatted + ') →');
+                            }
+                        } catch (err) {
+                            console.error('Verification request error:', err);
+                            showAlert('An error occurred while confirming payment. Please contact boutique support.', 'error');
+                            resetButton('Retry Verification →');
+                        }
+                    }
+
+                    payBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        launchRazorpay();
+                    });
+
+                    // Automatically open Razorpay modal upon page load
+                    if (window.Razorpay) {
+                        setTimeout(launchRazorpay, 500);
+                    }
+                })();
+                </script>
                 <?php
                 require_once __DIR__ . '/includes/footer.php';
                 exit;

@@ -1,16 +1,28 @@
 <?php
 /**
  * YoursSpeciallyJewellery - Server-Side Payment Verification
- * NEVER trusts the browser alone - validates cryptographic HMAC signatures
+ * Supports both JSON API calls and HTML Form POST submissions.
+ * NEVER trusts the browser alone - validates cryptographic HMAC signatures.
  */
+
+// If incoming request is JSON, delegate directly to the standard JSON API endpoint
+$isJsonRequest = (
+    (!empty($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) ||
+    (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
+);
+
+if ($isJsonRequest) {
+    require_once dirname(__DIR__) . '/api/verify-payment.php';
+    exit;
+}
 
 require_once __DIR__ . '/gateway.php';
 require_once __DIR__ . '/../includes/auth.php';
 
 $orderId = (int)($_POST['order_id'] ?? $_GET['order_id'] ?? 0);
-$razorpayOrderId = $_POST['razorpay_order_id'] ?? '';
-$razorpayPaymentId = $_POST['razorpay_payment_id'] ?? '';
-$razorpaySignature = $_POST['razorpay_signature'] ?? '';
+$razorpayOrderId = trim((string)($_POST['razorpay_order_id'] ?? ''));
+$razorpayPaymentId = trim((string)($_POST['razorpay_payment_id'] ?? ''));
+$razorpaySignature = trim((string)($_POST['razorpay_signature'] ?? ''));
 
 if ($orderId <= 0) {
     setFlash('error', 'Invalid order verification attempt.');
@@ -39,8 +51,13 @@ try {
 
     if ($isValid) {
         // Payment verified! Update order status
-        $upd = $db->prepare("UPDATE orders SET payment_status = 'Paid', order_status = 'Confirmed', updated_at = NOW() WHERE id = ?");
-        $upd->execute([$orderId]);
+        try {
+            $upd = $db->prepare("UPDATE orders SET payment_status = 'Paid', order_status = 'Confirmed', transaction_id = ?, updated_at = NOW() WHERE id = ?");
+            $upd->execute([$razorpayPaymentId, $orderId]);
+        } catch (Throwable $t) {
+            $upd = $db->prepare("UPDATE orders SET payment_status = 'Paid', order_status = 'Confirmed', updated_at = NOW() WHERE id = ?");
+            $upd->execute([$orderId]);
+        }
 
         // Deduct inventory stock for ordered items
         $itemsStmt = $db->prepare("SELECT product_id, variant_id, quantity FROM order_items WHERE order_id = ?");
