@@ -17,4 +17,8 @@ return [
     'DB_NAME' => 'u391621178_yoursjewellery',
     'DB_USER' => 'u391621178_yoursjewellery',
     'DB_PASS' => 'YOUR_HOSTINGER_DB_PASSWORD',
+
+    // Optional Razorpay Gateway Credentials Override
+    'RAZORPAY_KEY_ID' => 'rzp_test_TyN7wLxOiKARgD',
+    'RAZORPAY_KEY_SECRET' => '4nY8nJpCtOcCuXJpjsXRoCXw',
 ];

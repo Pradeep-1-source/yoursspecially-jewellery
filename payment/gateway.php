@@ -8,10 +8,22 @@ require_once __DIR__ . '/../config/config.php';
 
 // ==========================================================
 // RAZORPAY ENVIRONMENT CREDENTIALS
-// Loaded securely from .env or system environment variables
+// Priority:
+// 1. System environment variables / .env (getenv / $_ENV / $_SERVER)
+// 2. Production config in config/database.production.php
+// 3. Fallback to provided boutique sandbox test credentials
 // ==========================================================
-$envKeyId = getenv('RAZORPAY_KEY_ID') ?: ($_ENV['RAZORPAY_KEY_ID'] ?? ($_SERVER['RAZORPAY_KEY_ID'] ?? ''));
-$envKeySecret = getenv('RAZORPAY_KEY_SECRET') ?: ($_ENV['RAZORPAY_KEY_SECRET'] ?? ($_SERVER['RAZORPAY_KEY_SECRET'] ?? ''));
+$prodConfig = [];
+$prodConfigFile = dirname(__DIR__) . '/config/database.production.php';
+if (file_exists($prodConfigFile)) {
+    $loaded = include $prodConfigFile;
+    if (is_array($loaded)) {
+        $prodConfig = $loaded;
+    }
+}
+
+$envKeyId = getenv('RAZORPAY_KEY_ID') ?: ($_ENV['RAZORPAY_KEY_ID'] ?? ($_SERVER['RAZORPAY_KEY_ID'] ?? ($prodConfig['RAZORPAY_KEY_ID'] ?? 'rzp_test_TyN7wLxOiKARgD')));
+$envKeySecret = getenv('RAZORPAY_KEY_SECRET') ?: ($_ENV['RAZORPAY_KEY_SECRET'] ?? ($_SERVER['RAZORPAY_KEY_SECRET'] ?? ($prodConfig['RAZORPAY_KEY_SECRET'] ?? '4nY8nJpCtOcCuXJpjsXRoCXw')));
 
 if (!defined('RAZORPAY_KEY_ID')) {
     define('RAZORPAY_KEY_ID', $envKeyId);
