@@ -22,8 +22,36 @@ if (file_exists($prodConfigFile)) {
     }
 }
 
-$envKeyId = getenv('RAZORPAY_KEY_ID') ?: ($_ENV['RAZORPAY_KEY_ID'] ?? ($_SERVER['RAZORPAY_KEY_ID'] ?? ($prodConfig['RAZORPAY_KEY_ID'] ?? 'rzp_test_TyN7wLxOiKARgD')));
-$envKeySecret = getenv('RAZORPAY_KEY_SECRET') ?: ($_ENV['RAZORPAY_KEY_SECRET'] ?? ($_SERVER['RAZORPAY_KEY_SECRET'] ?? ($prodConfig['RAZORPAY_KEY_SECRET'] ?? '4nY8nJpCtOcCuXJpjsXRoCXw')));
+$resolveRazorpayCredential = function(array $candidates, string $fallback): string {
+    foreach ($candidates as $val) {
+        if (!is_string($val)) {
+            continue;
+        }
+        $val = trim($val);
+        if (
+            $val !== '' &&
+            !str_contains($val, 'YOUR_KEY_ID') &&
+            !str_contains($val, 'YOUR_RAZORPAY')
+        ) {
+            return $val;
+        }
+    }
+    return $fallback;
+};
+
+$envKeyId = $resolveRazorpayCredential([
+    getenv('RAZORPAY_KEY_ID'),
+    $_ENV['RAZORPAY_KEY_ID'] ?? null,
+    $_SERVER['RAZORPAY_KEY_ID'] ?? null,
+    $prodConfig['RAZORPAY_KEY_ID'] ?? null,
+], 'rzp_test_TyN7wLxOiKARgD');
+
+$envKeySecret = $resolveRazorpayCredential([
+    getenv('RAZORPAY_KEY_SECRET'),
+    $_ENV['RAZORPAY_KEY_SECRET'] ?? null,
+    $_SERVER['RAZORPAY_KEY_SECRET'] ?? null,
+    $prodConfig['RAZORPAY_KEY_SECRET'] ?? null,
+], '4nY8nJpCtOcCuXJpjsXRoCXw');
 
 if (!defined('RAZORPAY_KEY_ID')) {
     define('RAZORPAY_KEY_ID', $envKeyId);
