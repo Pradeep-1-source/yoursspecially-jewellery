@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $state = trim($_POST['state'] ?? '');
     $pincode = trim($_POST['pincode'] ?? '');
     $country = trim($_POST['country'] ?? 'India');
-    $paymentMethod = $_POST['payment_method'] ?? 'online'; // 'online' or 'cod'
+    $paymentMethod = 'online';
 
     if (empty($name) || empty($email) || empty($phone) || empty($address1) || empty($city) || empty($state) || empty($pincode)) {
         $errors[] = 'Please fill in all required shipping and contact details.';
@@ -142,8 +142,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (customer_id, order_number, subtotal, shipping_charge, discount, total_amount, payment_method, payment_status, order_status, customer_name, customer_phone, customer_email, shipping_address, created_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
 
-            $initialPaymentStatus = ($paymentMethod === 'cod') ? 'Pending' : 'Pending';
-            $initialOrderStatus = ($paymentMethod === 'cod') ? 'Confirmed' : 'Pending';
+            $initialPaymentStatus = 'Pending';
+            $initialOrderStatus = 'Pending';
 
             $orderStmt->execute([
                 $customerId,
@@ -178,16 +178,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ci['price'],
                     $lineSub
                 ]);
-
-                // If COD, deduct inventory stock immediately
-                if ($paymentMethod === 'cod') {
-                    if (!empty($ci['variant_id'])) {
-                        $updVarStock = $db->prepare("UPDATE product_variants SET stock = GREATEST(0, stock - ?) WHERE id = ?");
-                        $updVarStock->execute([$ci['quantity'], $ci['variant_id']]);
-                    }
-                    $updStock = $db->prepare("UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?");
-                    $updStock->execute([$ci['quantity'], $ci['product_id']]);
-                }
             }
 
             // Save address to customer profile if logged in
@@ -202,20 +192,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $db->commit();
 
-            // Handle Payment Strategy
-            if ($paymentMethod === 'cod') {
-                // Clear cart
-                $delCart = $db->prepare("DELETE FROM cart_items WHERE cart_id = ?");
-                $delCart->execute([$cartId]);
-                unset($_SESSION['applied_coupon']);
-
-                header("Location: " . BASE_URL . "order-success.php?order=" . urlencode($orderNumber));
-                exit;
-            } else {
-                // Online Payment Gateway Checkout: Render Payment Verification Screen
-                $_SESSION['pending_order_id'] = $newOrderId;
-                $_SESSION['pending_order_number'] = $orderNumber;
-                $_SESSION['pending_order_total'] = $grandTotal;
+            // Online Payment Gateway Checkout: Render Payment Verification Screen
+            $_SESSION['pending_order_id'] = $newOrderId;
+            $_SESSION['pending_order_number'] = $orderNumber;
+            $_SESSION['pending_order_total'] = $grandTotal;
 
                 // Proceed to payment gateway initiation
                 $gateway = getPaymentGateway();
@@ -489,7 +469,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php
                 require_once __DIR__ . '/includes/footer.php';
                 exit;
-            }
 
         } catch (Exception $e) {
             if ($db->inTransaction()) {
@@ -588,15 +567,7 @@ require_once __DIR__ . '/includes/header.php';
                         <input type="radio" name="payment_method" value="online" checked style="accent-color: var(--primary); width: 18px; height: 18px;">
                         <div>
                             <strong style="color: var(--primary); display: block;">Instant Online Payment (UPI, Cards, NetBanking, Wallets)</strong>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Supports Google Pay, PhonePe, Paytm, Visa, Mastercard, RuPay & NetBanking.</span>
-                        </div>
-                    </label>
-
-                    <label style="display: flex; align-items: center; gap: 1rem; padding: 1.25rem; border: 1px solid var(--border-subtle); border-radius: 6px; cursor: pointer; background: #fff;">
-                        <input type="radio" name="payment_method" value="cod" style="accent-color: var(--primary); width: 18px; height: 18px;">
-                        <div>
-                            <strong style="color: var(--primary); display: block;">Cash On Delivery (COD) / Direct Boutique Transfer</strong>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Pay upon receiving your insured velvet package at your doorstep.</span>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Supports Google Pay, PhonePe, Paytm, Visa, Mastercard, RuPay & NetBanking via Razorpay.</span>
                         </div>
                     </label>
                 </div>
