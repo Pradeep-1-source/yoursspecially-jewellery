@@ -19,6 +19,6 @@ return [
     'DB_PASS' => 'YOUR_HOSTINGER_DB_PASSWORD',
 
     // Optional Razorpay Gateway Credentials Override
-    'RAZORPAY_KEY_ID' => 'rzp_test_TyN7wLxOiKARgD',
-    'RAZORPAY_KEY_SECRET' => '4nY8nJpCtOcCuXJpjsXRoCXw',
+    'RAZORPAY_KEY_ID' => 'YOUR_RAZORPAY_KEY_ID',
+    'RAZORPAY_KEY_SECRET' => 'YOUR_RAZORPAY_KEY_SECRET',
 ];

@@ -11,7 +11,6 @@ require_once __DIR__ . '/../config/config.php';
 // Priority:
 // 1. System environment variables / .env (getenv / $_ENV / $_SERVER)
 // 2. Production config in config/database.production.php
-// 3. Fallback to provided boutique sandbox test credentials
 // ==========================================================
 $prodConfig = [];
 $prodConfigFile = dirname(__DIR__) . '/config/database.production.php';
@@ -22,7 +21,7 @@ if (file_exists($prodConfigFile)) {
     }
 }
 
-$resolveRazorpayCredential = function(array $candidates, string $fallback): string {
+$resolveRazorpayCredential = function(array $candidates, string $fallback = ''): string {
     foreach ($candidates as $val) {
         if (!is_string($val)) {
             continue;
@@ -44,14 +43,14 @@ $envKeyId = $resolveRazorpayCredential([
     $_ENV['RAZORPAY_KEY_ID'] ?? null,
     $_SERVER['RAZORPAY_KEY_ID'] ?? null,
     $prodConfig['RAZORPAY_KEY_ID'] ?? null,
-], 'rzp_test_TyN7wLxOiKARgD');
+], '');
 
 $envKeySecret = $resolveRazorpayCredential([
     getenv('RAZORPAY_KEY_SECRET'),
     $_ENV['RAZORPAY_KEY_SECRET'] ?? null,
     $_SERVER['RAZORPAY_KEY_SECRET'] ?? null,
     $prodConfig['RAZORPAY_KEY_SECRET'] ?? null,
-], '4nY8nJpCtOcCuXJpjsXRoCXw');
+], '');
 
 if (!defined('RAZORPAY_KEY_ID')) {
     define('RAZORPAY_KEY_ID', $envKeyId);
